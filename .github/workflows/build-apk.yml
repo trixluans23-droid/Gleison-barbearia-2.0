@@ -25,7 +25,10 @@ jobs:
           test -f GleisonBarbeariaAndroid/app/build.gradle
           test -f GleisonBarbeariaAndroid/app/google-services.json
           test -f GleisonBarbeariaAndroid/app/src/main/assets/index.html
-
+      - name: Ativar AndroidX
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          printf "android.useAndroidX=true\nandroid.enableJetifier=true\n" > gradle.properties
       - name: Configurar Java 17
         uses: actions/setup-java@v4
         with:
