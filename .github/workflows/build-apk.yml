@@ -38,8 +38,6 @@ jobs:
           echo "Verificando MainActivity..."
           test -f "$ACTIVITY_FILE"
 
-          cp "$ACTIVITY_FILE" "$ACTIVITY_FILE.BACKUP"
-
           cat > "$ACTIVITY_FILE" <<'JAVA'
 package com.gleisonbarbearia.app;
 
@@ -62,11 +60,14 @@ public class MainActivity extends Activity {
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
+
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
@@ -87,7 +88,8 @@ public class MainActivity extends Activity {
 }
 JAVA
 
-          echo "MainActivity corrigida no ambiente de build."
+          echo "MainActivity corrigida."
+
           grep -n "class MainActivity" "$ACTIVITY_FILE"
           grep -n "loadUrl" "$ACTIVITY_FILE"
 
