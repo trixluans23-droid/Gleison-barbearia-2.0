@@ -35,6 +35,113 @@ jobs:
 
           test -f "$ACTIVITY_FILE"
 
-          echo "Corrigindo MainActivity..."
+          cat > "$ACTIVITY_FILE" <<'JAVA'
+package com.gleisonbarbearia.app;
 
-          echo "cGFja2FnZSBjb20uZ2xlaXNvbmJhcmJlYXJpYS5hcHA7CgppbXBvcnQgYW5kcm9pZC5hcHAuQWN0aXZpdHk7CmltcG9ydCBhbmRyb2lkLm9zLkJ1bmRsZTsKaW1wb3J0IGFuZHJvaWQud2Via2l0LldlYkNocm9tZUNsaWVudDsKaW1wb3J0IGFuZHJvaWQud2Via2l0LldlYlNldHRpbmdzOwppbXBvcnQgYW5kcm9pZC53ZWJraXQuV2ViVmlldzsKaW1wb3J0IGFuZHJvaWQud2Via2l0LldlYlZpZXdDbGllbnQ7CgpwdWJsaWMgY2xhc3MgTWFpbkFjdGl2aXR5IGV4dGVuZHMgQWN0aXZpdHkgewoKICAgIHByaXZhdGUgV2ViVmlldyB3ZWJWaWV3OwoKICAgIEBPdmVycmlkZQogICAgcHJvdGVjdGVkIHZvaWQgb25DcmVhdGUoQnVuZGxlIHNhdmVkSW5zdGFuY2VTdGF0ZSkgewogICAgICAgIHN1cGVyLm9uQ3JlYXRlKHNhdmVkSW5zdGFuY2VTdGF0ZSk7CgogICAgICAgIHdlYlZpZXcgPSBuZXcgV2ViVmlldyh0aGlzKTsKICAgICAgICBzZXRDb250ZW50Vmlldyh3ZWJWaWV3KTsK
+import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+
+public class MainActivity extends Activity {
+
+    private WebView webView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        webView = new WebView(this);
+        setContentView(webView);
+
+        WebSettings settings = webView.getSettings();
+
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
+}
+JAVA
+
+          echo "MainActivity corrigida."
+          grep -n "class MainActivity" "$ACTIVITY_FILE"
+          grep -n "WebView" "$ACTIVITY_FILE"
+          grep -n "loadUrl" "$ACTIVITY_FILE"
+
+      - name: Corrigir conflito FirebaseMessagingService
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          SERVICE_FILE="app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java"
+
+          test -f "$SERVICE_FILE"
+
+          sed -i '/^import com\.google\.firebase\.messaging\.FirebaseMessagingService;$/d' "$SERVICE_FILE"
+
+          sed -i 's/extends FirebaseMessagingService/extends com.google.firebase.messaging.FirebaseMessagingService/' "$SERVICE_FILE"
+
+          echo "FirebaseMessagingService corrigido."
+
+      - name: Ativar AndroidX
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          printf "android.useAndroidX=true\nandroid.enableJetifier=true\n" > gradle.properties
+
+          echo "AndroidX ativado."
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Aceitar licenças Android
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Compilar APK
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          gradle assembleDebug --stacktrace
+
+      - name: Verificar APK gerado
+        run: |
+          test -f GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
+
+          echo "APK gerado com sucesso!"
+
+          ls -lh GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GleisonBarbearia-2.0-debug-apk
+          path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
