@@ -1,129 +1,52 @@
-name: Build APK - Gleison Barbearia 2.0
+name: Publicar sistema online
 
 on:
   workflow_dispatch:
   push:
     paths:
       - 'GleisonBarbearia_2.0_V27_FCM.zip'
-      - '.github/workflows/build-apk.yml'
+      - '.github/workflows/deploy-site.yml'
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
 
-      - name: Descompactar projeto Android
+      - name: Preparar sistema
         run: |
           rm -rf GleisonBarbeariaAndroid
+          rm -rf site
+
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
 
-          test -f GleisonBarbeariaAndroid/settings.gradle
-          test -f GleisonBarbeariaAndroid/app/build.gradle
-          test -f GleisonBarbeariaAndroid/app/google-services.json
           test -f GleisonBarbeariaAndroid/app/src/main/assets/index.html
 
-          echo "Estrutura do projeto OK."
+          mkdir -p site
 
-      - name: Configurar aplicativo para abrir a versão online
-        working-directory: GleisonBarbeariaAndroid
-        run: |
-          ACTIVITY_FILE="app/src/main/java/com/gleisonbarbearia/app/MainActivity.java"
-          MANIFEST_FILE="app/src/main/AndroidManifest.xml"
+          cp GleisonBarbeariaAndroid/app/src/main/assets/index.html site/index.html
 
-          test -f "$ACTIVITY_FILE"
-          test -f "$MANIFEST_FILE"
+          echo "Sistema preparado para publicação."
 
-          cat > "$ACTIVITY_FILE" <<'JAVA'
-          package com.gleisonbarbearia.app;
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
 
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-
-          public class MainActivity extends Activity {
-
-              private WebView webView;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-
-                  webView = new WebView(this);
-                  setContentView(webView);
-
-                  WebSettings settings = webView.getSettings();
-
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setDatabaseEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
-                  settings.setJavaScriptCanOpenWindowsAutomatically(true);
-                  settings.setMediaPlaybackRequiresUserGesture(false);
-
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.setWebChromeClient(new WebChromeClient());
-
-                  webView.loadUrl("https://trixluans23-droid.github.io/Gleison-barbearia-2.0/");
-              }
-
-              @Override
-              public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
-              }
-          }
-          JAVA
-
-          if ! grep -q 'android.permission.INTERNET' "$MANIFEST_FILE"; then
-            sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET" />\n\n    <application#' "$MANIFEST_FILE"
-          fi
-
-          echo "MainActivity configurada para a versão online."
-          echo "Permissão de internet verificada."
-
-      - name: Corrigir conflito FirebaseMessagingService
-        working-directory: GleisonBarbeariaAndroid
-        run: |
-          SERVICE_FILE="app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java"
-
-          if test -f "$SERVICE_FILE"; then
-            sed -i '/^import com\.google\.firebase\.messaging\.FirebaseMessagingService;$/d' "$SERVICE_FILE"
-            sed -i 's/extends FirebaseMessagingService/extends com.google.firebase.messaging.FirebaseMessagingService/' "$SERVICE_FILE"
-            echo "FirebaseMessagingService corrigido."
-          else
-            echo "FirebaseMessagingService.java não encontrado; seguindo sem alteração."
-          fi
-
-      - name: Dar permissão ao Gradle
-        working-directory: GleisonBarbeariaAndroid
-        run: chmod +x gradlew
-
-      - name: Compilar APK
-        working-directory: GleisonBarbeariaAndroid
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Verificar APK
-        working-directory: GleisonBarbeariaAndroid
-        run: |
-          test -f app/build/outputs/apk/debug/app-debug.apk
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Enviar APK
-        uses: actions/upload-artifact@v4
+      - name: Criar pacote do site
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: GleisonBarbearia-2.0-online-debug-apk
-          path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          path: './site'
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
