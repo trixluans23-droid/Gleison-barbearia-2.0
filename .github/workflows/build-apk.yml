@@ -19,6 +19,7 @@ jobs:
       - name: Descompactar projeto Android
         run: |
           rm -rf GleisonBarbeariaAndroid
+
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
 
           test -f GleisonBarbeariaAndroid/settings.gradle
@@ -51,3 +52,391 @@ jobs:
           import android.webkit.WebViewClient;
 
           public class MainActivity extends Activity {
+
+              private static final String CHANNEL_ID =
+                  "gleison_notifications";
+
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  criarCanalNotificacao();
+                  solicitarPermissaoNotificacao();
+
+                  webView = new WebView(this);
+
+                  setContentView(webView);
+
+                  WebSettings settings =
+                      webView.getSettings();
+
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+                  settings.setJavaScriptCanOpenWindowsAutomatically(true);
+                  settings.setMediaPlaybackRequiresUserGesture(false);
+
+                  webView.setWebViewClient(
+                      new WebViewClient()
+                  );
+
+                  webView.setWebChromeClient(
+                      new WebChromeClient()
+                  );
+
+                  webView.loadUrl(
+                      "file:///android_asset/index.html"
+                  );
+              }
+
+              private void criarCanalNotificacao() {
+
+                  if (
+                      Build.VERSION.SDK_INT >=
+                      Build.VERSION_CODES.O
+                  ) {
+
+                      NotificationManager manager =
+                          getSystemService(
+                              NotificationManager.class
+                          );
+
+                      if (manager != null) {
+
+                          NotificationChannel channel =
+                              new NotificationChannel(
+                                  CHANNEL_ID,
+                                  "Gleison Barbearia",
+                                  NotificationManager.IMPORTANCE_HIGH
+                              );
+
+                          channel.setDescription(
+                              "Agendamentos e avisos da barbearia"
+                          );
+
+                          channel.enableVibration(true);
+
+                          manager.createNotificationChannel(
+                              channel
+                          );
+                      }
+                  }
+              }
+
+              private void solicitarPermissaoNotificacao() {
+
+                  if (
+                      Build.VERSION.SDK_INT >=
+                      Build.VERSION_CODES.TIRAMISU
+                      &&
+                      checkSelfPermission(
+                          Manifest.permission.POST_NOTIFICATIONS
+                      )
+                      != PackageManager.PERMISSION_GRANTED
+                  ) {
+
+                      requestPermissions(
+                          new String[]{
+                              Manifest.permission.POST_NOTIFICATIONS
+                          },
+                          1001
+                      );
+                  }
+              }
+
+              @Override
+              public void onBackPressed() {
+
+                  if (
+                      webView != null &&
+                      webView.canGoBack()
+                  ) {
+
+                      webView.goBack();
+
+                  } else {
+
+                      super.onBackPressed();
+                  }
+              }
+          }
+          JAVA
+
+          echo "MainActivity configurada."
+
+          grep -n "public class MainActivity" "$ACTIVITY_FILE"
+          grep -n "loadUrl" "$ACTIVITY_FILE"
+          grep -n "gleison_notifications" "$ACTIVITY_FILE"
+
+      - name: Corrigir Firebase Messaging
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          SERVICE_FILE="app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java"
+
+          test -f "$SERVICE_FILE"
+
+          cat > "$SERVICE_FILE" <<'JAVA'
+          package com.gleisonbarbearia.app;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.content.Intent;
+          import android.os.Build;
+
+          import androidx.annotation.NonNull;
+
+          import com.google.firebase.messaging.FirebaseMessagingService;
+          import com.google.firebase.messaging.RemoteMessage;
+
+          public class FirebaseMessagingService
+              extends com.google.firebase.messaging.FirebaseMessagingService {
+
+              private static final String CHANNEL_ID =
+                  "gleison_notifications";
+
+              @Override
+              public void onMessageReceived(
+                  @NonNull RemoteMessage message
+              ) {
+
+                  String title =
+                      "Gleison Barbearia";
+
+                  String body =
+                      "Nova notificação.";
+
+                  if (
+                      message.getNotification() != null
+                  ) {
+
+                      if (
+                          message.getNotification().getTitle()
+                          != null
+                      ) {
+
+                          title =
+                              message.getNotification()
+                                  .getTitle();
+                      }
+
+                      if (
+                          message.getNotification().getBody()
+                          != null
+                      ) {
+
+                          body =
+                              message.getNotification()
+                                  .getBody();
+                      }
+                  }
+
+                  if (
+                      message.getData().containsKey("title")
+                  ) {
+
+                      String dataTitle =
+                          message.getData().get("title");
+
+                      if (dataTitle != null) {
+                          title = dataTitle;
+                      }
+                  }
+
+                  if (
+                      message.getData().containsKey("body")
+                  ) {
+
+                      String dataBody =
+                          message.getData().get("body");
+
+                      if (dataBody != null) {
+                          body = dataBody;
+                      }
+
+                  } else if (
+                      message.getData().containsKey("message")
+                  ) {
+
+                      String dataMessage =
+                          message.getData().get("message");
+
+                      if (dataMessage != null) {
+                          body = dataMessage;
+                      }
+                  }
+
+                  mostrarNotificacao(
+                      title,
+                      body
+                  );
+              }
+
+              private void mostrarNotificacao(
+                  String title,
+                  String body
+              ) {
+
+                  NotificationManager manager =
+                      (NotificationManager)
+                      getSystemService(
+                          NOTIFICATION_SERVICE
+                      );
+
+                  if (manager == null) {
+                      return;
+                  }
+
+                  criarCanalNotificacao(manager);
+
+                  Intent intent =
+                      new Intent(
+                          this,
+                          MainActivity.class
+                      );
+
+                  intent.addFlags(
+                      Intent.FLAG_ACTIVITY_CLEAR_TOP
+                  );
+
+                  int flags =
+                      PendingIntent.FLAG_UPDATE_CURRENT;
+
+                  if (
+                      Build.VERSION.SDK_INT >=
+                      Build.VERSION_CODES.M
+                  ) {
+
+                      flags |=
+                          PendingIntent.FLAG_IMMUTABLE;
+                  }
+
+                  PendingIntent pendingIntent =
+                      PendingIntent.getActivity(
+                          this,
+                          0,
+                          intent,
+                          flags
+                      );
+
+                  Notification.Builder builder;
+
+                  if (
+                      Build.VERSION.SDK_INT >=
+                      Build.VERSION_CODES.O
+                  ) {
+
+                      builder =
+                          new Notification.Builder(
+                              this,
+                              CHANNEL_ID
+                          );
+
+                  } else {
+
+                      builder =
+                          new Notification.Builder(
+                              this
+                          );
+                  }
+
+                  builder
+                      .setSmallIcon(
+                          android.R.drawable.ic_dialog_info
+                      )
+                      .setContentTitle(title)
+                      .setContentText(body)
+                      .setAutoCancel(true)
+                      .setContentIntent(pendingIntent)
+                      .setVibrate(
+                          new long[]{
+                              0,
+                              250,
+                              150,
+                              250
+                          }
+                      )
+                      .setPriority(
+                          Notification.PRIORITY_HIGH
+                      );
+
+                  manager.notify(
+                      (int) System.currentTimeMillis(),
+                      builder.build()
+                  );
+              }
+
+              private void criarCanalNotificacao(
+                  NotificationManager manager
+              ) {
+
+                  if (
+                      Build.VERSION.SDK_INT >=
+                      Build.VERSION_CODES.O
+                  ) {
+
+                      NotificationChannel channel =
+                          new NotificationChannel(
+                              CHANNEL_ID,
+                              "Gleison Barbearia",
+                              NotificationManager.IMPORTANCE_HIGH
+                          );
+
+                      channel.setDescription(
+                          "Agendamentos e avisos da barbearia"
+                      );
+
+                      channel.enableVibration(true);
+
+                      manager.createNotificationChannel(
+                          channel
+                      );
+                  }
+              }
+
+              @Override
+              public void onNewToken(
+                  @NonNull String token
+              ) {
+
+                  super.onNewToken(token);
+              }
+          }
+          JAVA
+
+          echo "Firebase Messaging configurado."
+
+          grep -n "onMessageReceived" "$SERVICE_FILE"
+          grep -n "gleison_notifications" "$SERVICE_FILE"
+
+      - name: Configurar AndroidManifest
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          manifest = Path(
+              "app/src/main/AndroidManifest.xml"
+          )
+
+          text = manifest.read_text(
+              encoding="utf-8"
+          )
+
+          permission = """
+              <uses-permission
+                  android:name="android.permission.POST_NOTIFICATIONS" />
+          """
+
+          if "android.permission.POST_NOTIFICATIONS" not in text:
+
+              manifest_start = text.find("<manifest")
+
+              manifest_end = text.find(
+                  ">",
+                  manifest_start
