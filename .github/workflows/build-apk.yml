@@ -15,12 +15,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Baixar código
         uses: actions/checkout@v4
 
       - name: Descompactar projeto Android
         run: |
           rm -rf GleisonBarbeariaAndroid
+
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
 
           test -f GleisonBarbeariaAndroid/settings.gradle
@@ -30,7 +32,7 @@ jobs:
 
           echo "Estrutura do projeto OK."
 
-      - name: Configurar aplicativo para abrir a versão online
+      - name: Corrigir MainActivity para versão online
         working-directory: GleisonBarbeariaAndroid
         run: |
           ACTIVITY_FILE="app/src/main/java/com/gleisonbarbearia/app/MainActivity.java"
@@ -91,8 +93,7 @@ jobs:
             sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET" />\n\n    <application#' "$MANIFEST_FILE"
           fi
 
-          echo "MainActivity configurada para a versão online."
-          echo "Permissão de internet verificada."
+          echo "MainActivity configurada para abrir o sistema online."
 
       - name: Corrigir conflito FirebaseMessagingService
         working-directory: GleisonBarbeariaAndroid
@@ -107,21 +108,38 @@ jobs:
             echo "FirebaseMessagingService.java não encontrado; seguindo sem alteração."
           fi
 
-      - name: Dar permissão ao Gradle
-        working-directory: GleisonBarbeariaAndroid
-        run: chmod +x gradlew
+      - name: Configurar Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: 15859902
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
+          packages: platform-tools
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Compilar APK
         working-directory: GleisonBarbeariaAndroid
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          gradle assembleDebug --stacktrace
 
-      - name: Verificar APK
+      - name: Verificar APK gerado
         working-directory: GleisonBarbeariaAndroid
         run: |
           test -f app/build/outputs/apk/debug/app-debug.apk
+          echo "APK gerado com sucesso:"
           ls -lh app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Enviar APK
+      - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
           name: GleisonBarbearia-2.0-online-debug-apk
