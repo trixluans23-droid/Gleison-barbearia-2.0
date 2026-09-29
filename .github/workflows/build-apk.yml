@@ -32,6 +32,16 @@ jobs:
 
           echo "Estrutura do projeto OK."
 
+      - name: Ativar AndroidX
+        working-directory: GleisonBarbeariaAndroid
+        run: |
+          cat > gradle.properties <<'PROPS'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          PROPS
+
+          echo "AndroidX ativado."
+
       - name: Corrigir MainActivity para versão online
         working-directory: GleisonBarbeariaAndroid
         run: |
