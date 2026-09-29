@@ -1,0 +1,52 @@
+name: Publicar sistema online
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'GleisonBarbearia_2.0_V27_FCM.zip'
+      - '.github/workflows/deploy-site.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Preparar sistema
+        run: |
+          rm -rf GleisonBarbeariaAndroid
+          rm -rf site
+
+          unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
+
+          test -f GleisonBarbeariaAndroid/app/src/main/assets/index.html
+
+          mkdir -p site
+
+          cp GleisonBarbeariaAndroid/app/src/main/assets/index.html site/index.html
+
+          echo "Sistema preparado para publicação."
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Criar pacote do site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
