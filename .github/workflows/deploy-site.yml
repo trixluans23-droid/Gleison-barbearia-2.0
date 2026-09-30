@@ -533,6 +533,9 @@ jobs:
           code=r'''
           <style id="agenda-carregamento-online-style">
           .status-atendimento-encerrado{border-color:rgba(220,53,69,.8)!important;box-shadow:0 0 0 2px rgba(220,53,69,.12) inset}
+          .agenda-status-cancelado{background:#e53955!important;color:#fff!important;border-color:#e53955!important}
+          .agenda-status-agendado{background:#f2c14e!important;color:#171717!important;border-color:#f2c14e!important}
+          .agenda-status-atendido{background:#4dcc83!important;color:#171717!important;border-color:#4dcc83!important}
           </style>
           <script id="agenda-carregamento-online">
           (function(){
@@ -599,9 +602,8 @@ jobs:
                   var st=statusFinal(a);
                   var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
                   var statusCor=String(st||"").toLowerCase();
-                  var corFundo=statusCor==="cancelado"?"#e53955":statusCor==="atendido"?"#4dcc83":(statusCor==="agendado"||statusCor==="confirmado")?"#f2c14e":"";
-                  var corTexto=corFundo?"#171717":"";
-                  var estiloBadge=corFundo?' style="background:'+corFundo+'!important;color:'+corTexto+'!important;border-color:'+corFundo+'!important"':'';
+                  var classeStatus=statusCor==="cancelado"?" agenda-status-cancelado":(statusCor==="atendido"?" agenda-status-atendido":((statusCor==="agendado"||statusCor==="confirmado")?" agenda-status-agendado":""));
+                  var estiloBadge=classeStatus?' class="badge'+classeStatus+'"':' class="badge"';
                   var ativo=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
                   var botoes=ativo ?
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+
@@ -612,7 +614,7 @@ jobs:
                     '<div class="small">'+escapeHtml(formatDateTime(a.data_hora))+'</div>'+
                     '<b style="display:block;margin-top:5px">'+escapeHtml(a.servico||a.observacoes||"Serviço")+'</b>'+
                     '<div class="small" style="margin-top:6px">Cliente: '+escapeHtml(a.cliente_nome||"Cliente")+'</div>'+
-                    '<div style="margin-top:8px"><span class="badge"'+estiloBadge+'>'+escapeHtml(st)+'</span></div>'+
+                    '<div style="margin-top:8px"><span'+estiloBadge+'>'+escapeHtml(st)+'</span></div>'+
                     botoes+
                   '</div>';
                 }).join("");
