@@ -154,6 +154,17 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 @media(max-width:520px){.preco-admin-item{grid-template-columns:1fr}.preco-admin-valor{max-width:220px}}
 </style>
 <style>.preco-admin-input::placeholder{color:#555 !important;opacity:1 !important;-webkit-text-fill-color:#555 !important}.preco-admin-input:disabled{color:#111 !important;-webkit-text-fill-color:#111 !important;opacity:1 !important}</style><style>
+/* Resumo do dia — painel principal */
+.resumo-dia-admin{margin:12px 0 14px}
+.resumo-dia-titulo{font-weight:900;font-size:18px;margin-bottom:10px}
+.resumo-dia-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.resumo-dia-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px;text-align:center}
+.resumo-dia-icone{font-size:20px}
+.resumo-dia-label{font-size:12px;color:var(--muted);margin-top:3px}
+.resumo-dia-valor{font-size:21px;font-weight:900;margin-top:2px}
+.resumo-dia-atualizado{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
+@media(max-width:420px){.resumo-dia-grid{gap:7px}.resumo-dia-card{padding:9px}.resumo-dia-valor{font-size:19px}}
+</style><style>
 /* V40 — notificações internas do administrador */
 .notificacao-admin-btn{position:relative;min-height:58px;font-size:16px;font-weight:900}
 .notificacao-badge{position:absolute;top:6px;right:8px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:#d71920;color:#fff;font-size:12px;display:none;align-items:center;justify-content:center;box-sizing:border-box}
@@ -291,7 +302,19 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 </div>
 <button class="btn" id="btnRestaurarExcecaoAdmin" onclick="restaurarPadraoDiaAdmin()" style="width:100%;margin-top:8px" type="button">↩️ Restaurar padrão</button>
 <div id="excecaoMensagemAdmin" style="margin-top:10px"></div>
-</div><div class="admin-menu-title">PAINEL DO GLEISON</div><div class="admin-menu"><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('precos')" type="button">💲 Preços</button></div>
+</div><div class="admin-menu-title">PAINEL DO GLEISON</div>
+<div class="card resumo-dia-admin" id="resumoDiaAdmin">
+  <div class="resumo-dia-titulo">📊 Resumo de hoje</div>
+  <div class="resumo-dia-grid">
+    <div class="resumo-dia-card"><div class="resumo-dia-icone">📅</div><div class="resumo-dia-label">Agendamentos</div><div class="resumo-dia-valor" id="resumoDiaAgendamentos">—</div></div>
+    <div class="resumo-dia-card"><div class="resumo-dia-icone">✂️</div><div class="resumo-dia-label">Atendidos</div><div class="resumo-dia-valor" id="resumoDiaAtendidos">—</div></div>
+    <div class="resumo-dia-card"><div class="resumo-dia-icone">⏳</div><div class="resumo-dia-label">Pendentes</div><div class="resumo-dia-valor" id="resumoDiaPendentes">—</div></div>
+    <div class="resumo-dia-card"><div class="resumo-dia-icone">❌</div><div class="resumo-dia-label">Cancelados</div><div class="resumo-dia-valor" id="resumoDiaCancelados">—</div></div>
+    <div class="resumo-dia-card" style="grid-column:1/-1"><div class="resumo-dia-icone">💰</div><div class="resumo-dia-label">Faturamento do dia</div><div class="resumo-dia-valor" id="resumoDiaFaturamento">R$ 0,00</div></div>
+  </div>
+  <div class="resumo-dia-atualizado" id="resumoDiaAtualizado">Carregando resumo...</div>
+</div>
+<div class="admin-menu"><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('precos')" type="button">💲 Preços</button></div>
 
 <section class="section admin-view" id="viewNotificacoes">
 <button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button>
@@ -778,6 +801,40 @@ async function verPeriodo(tipo){
     totalEl.textContent=total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   }catch(e){
     console.error(e); info.textContent='Não foi possível calcular o período.'; at.textContent='0'; totalEl.textContent='R$ 0,00';
+  }
+}
+
+async function atualizarResumoDiaAdmin(){
+  const ids={
+    agendamentos:document.getElementById('resumoDiaAgendamentos'),
+    atendidos:document.getElementById('resumoDiaAtendidos'),
+    pendentes:document.getElementById('resumoDiaPendentes'),
+    cancelados:document.getElementById('resumoDiaCancelados'),
+    faturamento:document.getElementById('resumoDiaFaturamento'),
+    atualizado:document.getElementById('resumoDiaAtualizado')
+  };
+  if(!ids.agendamentos) return;
+  try{
+    const rows=await chamarRPC('listar_agenda_admin_foto',{p_data:hojeLocal()});
+    const lista=Array.isArray(rows)?rows:[];
+    const atendidos=lista.filter(a=>String(a.status||'').toLowerCase()==='atendido');
+    const cancelados=lista.filter(a=>String(a.status||'').toLowerCase()==='cancelado');
+    const pendentes=lista.filter(a=>['agendado','confirmado'].includes(String(a.status||'').toLowerCase()));
+    const total=atendidos.reduce((s,a)=>s+precoServico(a.servico||a.servico_nome),0);
+    ids.agendamentos.textContent=String(lista.length);
+    ids.atendidos.textContent=String(atendidos.length);
+    ids.pendentes.textContent=String(pendentes.length);
+    ids.cancelados.textContent=String(cancelados.length);
+    ids.faturamento.textContent=total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    ids.atualizado.textContent='Atualizado agora';
+  }catch(e){
+    console.error('Resumo do dia:',e);
+    ids.agendamentos.textContent='—';
+    ids.atendidos.textContent='—';
+    ids.pendentes.textContent='—';
+    ids.cancelados.textContent='—';
+    ids.faturamento.textContent='R$ —';
+    ids.atualizado.textContent='Não foi possível carregar o resumo.';
   }
 }
 
@@ -2202,7 +2259,10 @@ function mostrarTelaAdmin(tela){
     notificacoes:document.getElementById('viewNotificacoes')
   };
   Object.values(views).forEach(v=>v&&v.classList.remove('active'));
-  if(tela==='menu') return;
+  if(tela==='menu'){
+    atualizarResumoDiaAdmin().catch(e=>console.error('Resumo do dia:',e));
+    return;
+  }
   if(views[tela]) views[tela].classList.add('active');
   if(tela==='agenda'){
     const dataAgenda=document.getElementById('data');
@@ -2365,6 +2425,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 document.addEventListener('DOMContentLoaded', async function(){
   if (typeof window.mostrarTelaAdmin === 'function') window.mostrarTelaAdmin('menu');
   await iniciarSegurancaAdmin();
+  atualizarResumoDiaAdmin().catch(e=>console.error('Resumo do dia:',e));
 });
 </script>
 <script>
