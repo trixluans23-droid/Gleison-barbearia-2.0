@@ -166,3 +166,5 @@ jobs:
         with:
           name: GleisonBarbearia-2.0-som-gleison-debug-apk
           path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
+
+# Rebuild manual para testar a correção do lembrete nativo
