@@ -38,6 +38,8 @@ jobs:
           # The service class already has the same simple name as Firebase's base class,
           # so do not import FirebaseMessagingService; it would create a name collision.
           s = s.replace("import com.google.firebase.messaging.FirebaseMessagingService;\n", "")
+          s = s.replace("public class FirebaseMessagingService extends FirebaseMessagingService {",
+                          "public class FirebaseMessagingService extends com.google.firebase.messaging.FirebaseMessagingService {")
           if "import android.net.Uri;" not in s:
               marker = "import android.os.Build;"
               if marker in s:
