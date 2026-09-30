@@ -1426,9 +1426,9 @@ jobs:
               if "signInWithOtp" in body or "gc-recuperacao-overlay" in body or "recuperacao-conta-cliente-script" in body:
                   return ""
               return m.group(0)
-          s=re.sub(r'(<script\\b[^>]*>)(.*?)(</script>)', limpar_magic_link, s, flags=re.S|re.I)
-          s=re.sub(r'<button\\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</button>\\s*', '', s, flags=re.S|re.I)
-          s=re.sub(r'<a\\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</a>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'(<script\b[^>]*>)(.*?)(</script>)', limpar_magic_link, s, flags=re.S|re.I)
+          s=re.sub(r'<button\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</button>\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<a\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</a>\s*', '', s, flags=re.S|re.I)
 
           # Remove qualquer script adicional que tenha sido criado especificamente para passkey/biometria.
           def limpar_script(m):
@@ -1438,7 +1438,7 @@ jobs:
               if any(t.lower() in low for t in termos):
                   return ""
               return m.group(0)
-          s=re.sub(r'(<script\\b[^>]*>)(.*?)(</script>)', limpar_script, s, flags=re.S|re.I)
+          s=re.sub(r'(<script\b[^>]*>)(.*?)(</script>)', limpar_script, s, flags=re.S|re.I)
 
           # Remove botões/mensagens da biometria que eventualmente vieram do HTML original.
           s=re.sub(r'<button\\b[^>]*>.*?Ativar recuperação por biometria.*?</button>\\s*', '', s, flags=re.S|re.I)
