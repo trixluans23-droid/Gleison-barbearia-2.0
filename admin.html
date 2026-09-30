@@ -408,7 +408,18 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <button class="btn primary" id="btnAlterarSenha" onclick="alterarSenhaAdmin()" style="width:100%;margin-top:10px" type="button">Salvar nova senha</button>
 <div class="conta-msg" id="mensagemSenhaAdmin"></div>
 </div>
-</div></div><div class="admin-view" id="viewFinanceiro"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" id="painelFinanceiro" style="margin-top:14px">
+<div class="conta-secao" id="adminRecuperarCliente">
+<div style="font-weight:900;font-size:16px">🔐 Recuperar cadastro de cliente</div>
+<div class="conta-sub">Use quando o cliente perdeu o celular/número e não consegue recuperar pelo e-mail. Informe o telefone ou e-mail antigo e o novo telefone.</div>
+<label style="margin-top:12px">Telefone ou e-mail antigo</label>
+<input id="adminRecBusca" type="text" maxlength="160" placeholder="(11) 99999-9999 ou cliente@email.com"/>
+<label style="margin-top:10px">Novo telefone do cliente</label>
+<input id="adminRecNovoTelefone" type="tel" maxlength="15" inputmode="numeric" placeholder="(11) 99999-9999"/>
+<label style="margin-top:10px">Novo e-mail <span class="small">(opcional)</span></label>
+<input id="adminRecNovoEmail" type="email" maxlength="160" autocomplete="email" placeholder="cliente@exemplo.com"/>
+<button class="btn primary" onclick="recuperarClienteAdmin()" style="width:100%;margin-top:10px" type="button">🔐 Recuperar cadastro</button>
+<div class="conta-msg" id="adminRecMensagem"></div>
+</div></div></div><div class="admin-view" id="viewFinanceiro"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" id="painelFinanceiro" style="margin-top:14px">
 <div style="font-weight:900;font-size:17px">Painel financeiro</div>
 <div class="small" style="margin-top:5px">Consulte o faturamento de um dia, da semana ou do mês.</div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
@@ -2614,6 +2625,57 @@ document.addEventListener('DOMContentLoaded', function(){
     }, {passive:true});
   });
 });
+</script>
+<script id="admin-recuperacao-script">
+(function(){
+  function digits(v){return String(v||"").replace(/\D/g,"");}
+  function fmtPhone(v){
+    var d=digits(v).slice(0,11);
+    if(d.length<=2)return d;
+    if(d.length<=7)return "("+d.slice(0,2)+") "+d.slice(2);
+    return "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
+  }
+  function msg(text,ok){
+    var el=document.getElementById("adminRecMensagem");
+    if(el){el.textContent=text||"";el.className="conta-msg "+(ok?"success":"error");}
+  }
+  window.recuperarClienteAdmin=async function(){
+    var busca=(document.getElementById("adminRecBusca")||{}).value||"";
+    var novo=digits((document.getElementById("adminRecNovoTelefone")||{}).value||"");
+    var email=((document.getElementById("adminRecNovoEmail")||{}).value||"").trim().toLowerCase();
+    var btn=document.querySelector('#adminRecuperarCliente button.btn.primary');
+    if(!busca.trim()){msg("Informe o telefone ou e-mail antigo.",false);return;}
+    if(novo.length!==11){msg("Informe o novo telefone com DDD.",false);return;}
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg("Confira o novo e-mail.",false);return;}
+    if(btn)btn.disabled=true;
+    msg("Recuperando cadastro... ",true);
+    try{
+      var r=await chamarRPC("admin_recuperar_conta_cliente",{
+        p_busca:busca.trim(),
+        p_novo_telefone:novo,
+        p_novo_email:email||null
+      });
+      var c=Array.isArray(r)?(r[0]||null):r;
+      if(!c)throw new Error("Não foi possível recuperar o cadastro.");
+      msg("Cadastro recuperado: "+(c.nome||"Cliente")+" — novo telefone "+fmtPhone(c.telefone||novo)+".",true);
+      var b=document.getElementById("adminRecBusca");
+      var nt=document.getElementById("adminRecNovoTelefone");
+      var ne=document.getElementById("adminRecNovoEmail");
+      if(b)b.value="";
+      if(nt)nt.value="";
+      if(ne)ne.value="";
+    }catch(e){
+      console.error("Recuperação administrativa:",e);
+      msg(e.message||"Não foi possível recuperar o cadastro.",false);
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  };
+  document.addEventListener("DOMContentLoaded",function(){
+    var tel=document.getElementById("adminRecNovoTelefone");
+    if(tel)tel.addEventListener("input",function(){this.value=fmtPhone(this.value);});
+  });
+})();
 </script>
 </body>
 </html>
