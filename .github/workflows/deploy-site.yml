@@ -598,11 +598,18 @@ jobs:
                 list.innerHTML=data.map(function(a){
                   var st=statusFinal(a);
                   var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
+                  var ativo=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
+                  var botoes=ativo ?
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+
+                    '<button class="btn secondary" style="padding:10px" type="button" onclick="openReschedule(\\''+escapeHtml(a.id)+'\\',\\''+escapeHtml(a.data_hora)+'\\')">Remarcar</button>'+
+                    '<button class="btn secondary" style="padding:10px" type="button" onclick="cancelAppointment(\\''+escapeHtml(a.id)+'\\')">Cancelar</button>'+
+                    '</div>' : '';
                   return '<div class="card'+cls+'">'+
                     '<div class="small">'+escapeHtml(formatDateTime(a.data_hora))+'</div>'+
                     '<b style="display:block;margin-top:5px">'+escapeHtml(a.servico||a.observacoes||"Serviço")+'</b>'+
                     '<div class="small" style="margin-top:6px">Cliente: '+escapeHtml(a.cliente_nome||"Cliente")+'</div>'+
                     '<div style="margin-top:8px"><span class="badge">'+escapeHtml(st)+'</span></div>'+
+                    botoes+
                   '</div>';
                 }).join("");
               }catch(error){
