@@ -334,7 +334,7 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 
 <section class="section admin-view" id="viewAgenda">
 <div class="card" style="margin-bottom:14px">
-  <div class="row"><div><div style="font-weight:900;font-size:18px">📅 Calendário da agenda</div><div class="small">Escolha um dia para abrir os agendamentos daquele dia.</div></div><button class="btn" type="button" onclick="carregarCalendarioAgendaAdmin()">↻ Atualizar</button></div>
+  <div class="row"><div><div style="display:flex;align-items:center;gap:10px"><span id="iconeDataCalendarioAgendaAdmin" aria-label="Data de hoje" style="width:46px;height:46px;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-start;background:#fff;border:1px solid #d9d9d9;border-radius:7px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.25);flex:none"><span id="mesIconeDataCalendarioAgendaAdmin" style="width:100%;background:#ef233c;color:#fff;font-size:10px;font-weight:900;line-height:15px;text-align:center">---</span><span id="diaIconeDataCalendarioAgendaAdmin" style="color:#222;font-size:22px;font-weight:900;line-height:29px">--</span></span><div><div style="font-weight:900;font-size:18px">Calendário da agenda</div><div class="small">Escolha um dia para abrir os agendamentos daquele dia.</div></div></div></div><button class="btn" type="button" onclick="carregarCalendarioAgendaAdmin()">↻ Atualizar</button></div>
   <div class="card" style="margin-top:12px;background:var(--panel2)">
     <div class="row"><button class="btn" type="button" onclick="mudarMesAgendaAdmin(-1)">‹</button><div id="tituloMesAgendaAdmin" style="font-weight:900;font-size:18px;text-align:center">Calendário</div><button class="btn" type="button" onclick="mudarMesAgendaAdmin(1)">›</button></div>
     <div id="calendarioAgendaAdmin" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px"></div>
@@ -707,6 +707,16 @@ function formatarDataHora(v){
   if(Number.isNaN(d.getTime())) return v || '';
   return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})
     +' • '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function atualizarIconeDataCalendarioAgendaAdmin(){
+  const mesEl=document.getElementById('mesIconeDataCalendarioAgendaAdmin');
+  const diaEl=document.getElementById('diaIconeDataCalendarioAgendaAdmin');
+  if(!mesEl || !diaEl) return;
+  const nomesMes=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const p=String(hojeLocal()).split('-').map(Number);
+  if(p.length!==3 || !p[1] || !p[2]) return;
+  mesEl.textContent=nomesMes[p[1]-1]||'---';
+  diaEl.textContent=String(p[2]);
 }
 function atualizarDataExataAgendaAdmin(){
   const input=document.getElementById('data');
@@ -2536,6 +2546,7 @@ window.carregarCalendarioAgendaAdmin=async function(){
  }catch(e){console.warn('Calendário da agenda:',e);}
 };
 document.addEventListener('DOMContentLoaded',()=>{
+  atualizarIconeDataCalendarioAgendaAdmin();
   setTimeout(()=>{
     const input=document.getElementById('data');
     const hoje=dataHojeAgendaAdmin().iso;
