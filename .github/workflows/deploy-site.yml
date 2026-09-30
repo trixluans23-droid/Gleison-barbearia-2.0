@@ -1407,6 +1407,279 @@ jobs:
           print("Cores dos status da agenda forçadas.")
           PY
 
+      - name: Usar somente recuperação de senha por e-mail
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          # Remove a implementação experimental de biometria/passkey.
+          s=re.sub(r'<style[^>]*id=["\\']reconhecimento-biometrico-online-style["\\'][^>]*>.*?</style>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<script[^>]*id=["\\']reconhecimento-biometrico-online-script["\\'][^>]*>.*?</script>\\s*', '', s, flags=re.S|re.I)
+
+          # Remove qualquer script adicional que tenha sido criado especificamente para passkey/biometria.
+          def limpar_script(m):
+              tag,body,end=m.group(1),m.group(2),m.group(3)
+              low=body.lower()
+              termos=("signInWithPasskey","registerPasskey","reconhecimento facial","recuperação por biometria","passkey")
+              if any(t.lower() in low for t in termos):
+                  return ""
+              return m.group(0)
+          s=re.sub(r'(<script\\b[^>]*>)(.*?)(</script>)', limpar_script, s, flags=re.S|re.I)
+
+          # Remove botões/mensagens da biometria que eventualmente vieram do HTML original.
+          s=re.sub(r'<button\\b[^>]*>.*?Ativar recuperação por biometria.*?</button>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<button\\b[^>]*>.*?Recuperar com reconhecimento facial.*?</button>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<[^>]+>\\s*Este celular/navegador não oferece biometria por passkey\\.\\s*</[^>]+>\\s*', '', s, flags=re.S|re.I)
+
+          # Remove a versão anterior da recuperação por link/magic-link.
+          s=re.sub(r'<style[^>]*id=["\\']recuperacao-conta-cliente-style["\\'][^>]*>.*?</style>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<div[^>]*id=["\\']gc-recuperacao-overlay["\\'][^>]*>.*?</div>\\s*</div>\\s*', '', s, count=1, flags=re.S|re.I)
+          s=re.sub(r'<script[^>]*id=["\\']recuperacao-conta-cliente-script["\\'][^>]*>.*?</script>\\s*', '', s, flags=re.S|re.I)
+
+          code=r'''
+          <style id="recuperacao-senha-email-style">
+          #gc-rec-senha-overlay,#gc-rec-senha-nova-overlay{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72)}
+          #gc-rec-senha-overlay.aberto,#gc-rec-senha-nova-overlay.aberto{display:flex}
+          .gc-rec-senha-modal{width:min(430px,100%);max-height:90vh;overflow:auto;background:#11161a;color:#fff;border:1px solid rgba(242,193,78,.35);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.65);padding:22px}
+          .gc-rec-senha-modal h2{margin:0 0 8px;color:#f2c14e;font:800 24px Arial,sans-serif}
+          .gc-rec-senha-modal p{margin:0 0 18px;color:#c7ccd2;font:400 14px/1.45 Arial,sans-serif}
+          .gc-rec-senha-modal label{display:block;margin:12px 0 6px;color:#fff;font:700 13px Arial,sans-serif}
+          .gc-rec-senha-modal input{box-sizing:border-box;width:100%;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#171c20;color:#fff;padding:13px 14px;font:600 16px Arial,sans-serif;outline:none}
+          .gc-rec-senha-modal input:focus{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.12)}
+          .gc-rec-senha-acoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+          .gc-rec-senha-modal button{border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:13px 14px;background:#171c20;color:#fff;font:800 15px Arial,sans-serif;cursor:pointer}
+          .gc-rec-senha-modal button.principal{background:#f2c14e;color:#171717;border-color:#f2c14e}
+          .gc-rec-senha-modal button:disabled{opacity:.55;cursor:wait}
+          .gc-rec-senha-msg{min-height:18px;margin-top:10px;font:600 13px Arial,sans-serif}
+          .gc-rec-senha-ok{color:#4dcc83}.gc-rec-senha-erro{color:#ff667a}.gc-rec-senha-info{color:#c7ccd2}
+          .gc-rec-senha-link{display:block;width:100%;margin-top:12px;padding:10px 4px;background:transparent!important;border:0!important;color:#f2c14e!important;font:700 13px Arial,sans-serif!important;text-align:center;cursor:pointer}
+          </style>
+
+          <div id="gc-rec-senha-overlay" aria-hidden="true">
+            <div class="gc-rec-senha-modal" role="dialog" aria-modal="true" aria-labelledby="gc-rec-senha-titulo">
+              <h2 id="gc-rec-senha-titulo">🔐 Recuperar minha senha</h2>
+              <p>Digite o e-mail cadastrado. Você receberá um link para criar uma nova senha.</p>
+              <label for="gc-rec-senha-email">E-mail cadastrado</label>
+              <input id="gc-rec-senha-email" type="email" maxlength="160" autocomplete="email" placeholder="seuemail@exemplo.com">
+              <div id="gc-rec-senha-msg" class="gc-rec-senha-msg"></div>
+              <div class="gc-rec-senha-acoes">
+                <button type="button" id="gc-rec-senha-fechar">Fechar</button>
+                <button type="button" class="principal" id="gc-rec-senha-enviar">Enviar link</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="gc-rec-senha-nova-overlay" aria-hidden="true">
+            <div class="gc-rec-senha-modal" role="dialog" aria-modal="true" aria-labelledby="gc-rec-senha-nova-titulo">
+              <h2 id="gc-rec-senha-nova-titulo">🔑 Criar nova senha</h2>
+              <p>Escolha uma nova senha com pelo menos 8 caracteres.</p>
+              <label for="gc-rec-senha-nova">Nova senha</label>
+              <input id="gc-rec-senha-nova" type="password" minlength="8" autocomplete="new-password" placeholder="Nova senha">
+              <label for="gc-rec-senha-confirma">Confirmar nova senha</label>
+              <input id="gc-rec-senha-confirma" type="password" minlength="8" autocomplete="new-password" placeholder="Repita a senha">
+              <div id="gc-rec-senha-nova-msg" class="gc-rec-senha-msg"></div>
+              <div class="gc-rec-senha-acoes">
+                <button type="button" id="gc-rec-senha-nova-fechar">Cancelar</button>
+                <button type="button" class="principal" id="gc-rec-senha-salvar">Salvar nova senha</button>
+              </div>
+            </div>
+          </div>
+
+          <script id="recuperacao-senha-email-script">
+          (function(){
+            var PHONE_KEY="gleison_telefone";
+            var NAME_KEY="gleison_nome";
+            var EMAIL_KEY="gleison_email";
+
+            function sb(){try{return window.supabaseClient||supabaseClient||null}catch(e){return window.supabaseClient||null}}
+            function abrir(id){var e=document.getElementById(id);if(e){e.classList.add("aberto");e.setAttribute("aria-hidden","false")}}
+            function fechar(id){var e=document.getElementById(id);if(e){e.classList.remove("aberto");e.setAttribute("aria-hidden","true")}}
+            function msg(id,t,c){var e=document.getElementById(id);if(e){e.textContent=t||"";e.className="gc-rec-senha-msg "+(c||"gc-rec-senha-info")}}
+            function emailVal(){return String((document.getElementById("gc-rec-senha-email")||{}).value||"").trim().toLowerCase()}
+            function baseUrl(){return window.location.href.split("#")[0].split("?")[0]}
+
+            async function restaurarCadastro(){
+              var client=sb(); if(!client||!client.auth)return;
+              try{
+                var r=await client.rpc("recuperar_conta_cliente_logado");
+                if(r.error)throw r.error;
+                var c=Array.isArray(r.data)?(r.data[0]||null):r.data;
+                if(c){
+                  localStorage.setItem(NAME_KEY,c.nome||"");
+                  localStorage.setItem(PHONE_KEY,c.telefone||"");
+                  localStorage.setItem(EMAIL_KEY,c.email||"");
+                }
+              }catch(e){console.warn("Cadastro não restaurado após troca de senha:",e)}
+            }
+
+            async function enviar(){
+              var b=document.getElementById("gc-rec-senha-enviar");
+              var email=emailVal();
+              if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){msg("gc-rec-senha-msg","Digite um e-mail válido.","gc-rec-senha-erro");return}
+              var client=sb();
+              if(!client||!client.auth){msg("gc-rec-senha-msg","Sistema ainda está carregando. Tente novamente.","gc-rec-senha-erro");return}
+              b.disabled=true;
+              msg("gc-rec-senha-msg","Enviando o link de recuperação...","gc-rec-senha-info");
+              try{
+                var r=await client.auth.resetPasswordForEmail(email,{redirectTo:baseUrl()});
+                if(r.error)throw r.error;
+                msg("gc-rec-senha-msg","Link enviado. Abra o e-mail e toque em “Reset password” para criar a nova senha.","gc-rec-senha-ok");
+              }catch(e){
+                console.error("Recuperação de senha:",e);
+                msg("gc-rec-senha-msg",e.message||"Não foi possível enviar o link. Tente novamente.","gc-rec-senha-erro");
+              }finally{b.disabled=false}
+            }
+
+            async function salvarNovaSenha(){
+              var b=document.getElementById("gc-rec-senha-salvar");
+              var a=String((document.getElementById("gc-rec-senha-nova")||{}).value||"");
+              var c=String((document.getElementById("gc-rec-senha-confirma")||{}).value||"");
+              if(a.length<8){msg("gc-rec-senha-nova-msg","A senha precisa ter pelo menos 8 caracteres.","gc-rec-senha-erro");return}
+              if(a!==c){msg("gc-rec-senha-nova-msg","As senhas não são iguais.","gc-rec-senha-erro");return}
+              var client=sb();
+              if(!client||!client.auth){msg("gc-rec-senha-nova-msg","Sistema ainda está carregando. Tente novamente.","gc-rec-senha-erro");return}
+              b.disabled=true;
+              msg("gc-rec-senha-nova-msg","Salvando nova senha...","gc-rec-senha-info");
+              try{
+                var r=await client.auth.updateUser({password:a});
+                if(r.error)throw r.error;
+                await restaurarCadastro();
+                fechar("gc-rec-senha-nova-overlay");
+                msg("gc-rec-senha-msg","Senha alterada com sucesso! Seu cadastro continua salvo.","gc-rec-senha-ok");
+                setTimeout(function(){window.location.replace(baseUrl()+"?senha-atualizada="+Date.now())},900);
+              }catch(e){
+                console.error("Nova senha:",e);
+                msg("gc-rec-senha-nova-msg",e.message||"Não foi possível alterar a senha.","gc-rec-senha-erro");
+              }finally{b.disabled=false}
+            }
+
+            function abrirRecuperacao(){
+              var e=document.getElementById("gc-rec-senha-email");
+              if(e)e.value=localStorage.getItem(EMAIL_KEY)||"";
+              msg("gc-rec-senha-msg","","gc-rec-senha-info");
+              abrir("gc-rec-senha-overlay");
+            }
+
+            function adicionarLinks(){
+              var cadastro=document.getElementById("gc-cadastro-overlay");
+              if(cadastro && !document.getElementById("gc-abrir-rec-senha-cadastro")){
+                var b=document.createElement("button");
+                b.id="gc-abrir-rec-senha-cadastro";b.type="button";b.className="gc-rec-senha-link";
+                b.textContent="🔐 Esqueci minha senha";
+                b.addEventListener("click",abrirRecuperacao);
+                var a=cadastro.querySelector(".gc-acoes");
+                if(a)a.parentNode.appendChild(b);
+              }
+              var perfil=document.querySelector("#gc-perfil-overlay .gc-acoes");
+              if(perfil && !document.getElementById("gc-abrir-rec-senha-perfil")){
+                var b2=document.createElement("button");
+                b2.id="gc-abrir-rec-senha-perfil";b2.type="button";b2.className="gc-rec-senha-link";
+                b2.textContent="🔐 Esqueci minha senha";
+                b2.addEventListener("click",abrirRecuperacao);
+                perfil.parentNode.appendChild(b2);
+              }
+            }
+
+            function ligar(){
+              var send=document.getElementById("gc-rec-senha-enviar");
+              var close=document.getElementById("gc-rec-senha-fechar");
+              var save=document.getElementById("gc-rec-senha-salvar");
+              var close2=document.getElementById("gc-rec-senha-nova-fechar");
+              if(send)send.addEventListener("click",enviar);
+              if(close)close.addEventListener("click",function(){fechar("gc-rec-senha-overlay")});
+              if(save)save.addEventListener("click",salvarNovaSenha);
+              if(close2)close2.addEventListener("click",function(){fechar("gc-rec-senha-nova-overlay")});
+              var ov=document.getElementById("gc-rec-senha-overlay");
+              if(ov)ov.addEventListener("click",function(e){if(e.target===ov)fechar("gc-rec-senha-overlay")});
+              adicionarLinks();
+
+              var client=sb();
+              if(client&&client.auth){
+                client.auth.onAuthStateChange(function(event){
+                  if(event==="PASSWORD_RECOVERY"){
+                    setTimeout(function(){
+                      fechar("gc-rec-senha-overlay");
+                      msg("gc-rec-senha-nova-msg","","gc-rec-senha-info");
+                      abrir("gc-rec-senha-nova-overlay");
+                    },150);
+                  }
+                });
+              }
+              if(/[?&]code=|[?&]type=recovery/.test(window.location.search+window.location.hash)){
+                setTimeout(function(){
+                  var c=sb();
+                  if(c&&c.auth)getTimeout();
+                },500);
+              }
+            }
+
+            function getTimeout(){
+              var client=sb();
+              if(!client||!client.auth)return;
+              client.auth.getSession().then(function(r){
+                if(r.data&&r.data.session){
+                  fechar("gc-rec-senha-overlay");
+                  abrir("gc-rec-senha-nova-overlay");
+                }
+              }).catch(function(){});
+            }
+
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(ligar,500)});
+            else setTimeout(ligar,500);
+
+            window.gleisonAbrirRecuperacaoSenha=abrirRecuperacao;
+          })();
+          </script>
+          '''
+
+          s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+
+          # Valida a presença da recuperação por senha e a ausência da biometria.
+          checks=[
+            'id="recuperacao-senha-email-style"',
+            'id="recuperacao-senha-email-script"',
+            'resetPasswordForEmail',
+            'updateUser({password:a})',
+            'Esqueci minha senha'
+          ]
+          for x in checks:
+              if x not in s: raise SystemExit("Faltando: "+x)
+          for x in ("signInWithPasskey","registerPasskey","Ativar recuperação por biometria","Recuperar com reconhecimento facial"):
+              if x in s: raise SystemExit("Biometria ainda presente: "+x)
+          print("Recuperação por senha via e-mail validada; biometria removida.")
+          PY
+
+      - name: Validar recuperação de senha
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("site/index.html").read_text(encoding="utf-8")
+          required=[
+            'id="recuperacao-senha-email-style"',
+            'id="recuperacao-senha-email-script"',
+            'resetPasswordForEmail',
+            'PASSWORD_RECOVERY',
+            'updateUser({password:a})',
+            'Esqueci minha senha'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing: raise SystemExit("Validação falhou: "+", ".join(missing))
+          forbidden=[
+            'signInWithPasskey',
+            'registerPasskey',
+            'Ativar recuperação por biometria',
+            'Recuperar com reconhecimento facial'
+          ]
+          found=[x for x in forbidden if x in s]
+          if found: raise SystemExit("Validação falhou; biometria encontrada: "+", ".join(found))
+          print("Recuperação de senha por e-mail OK.")
+          PY
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
