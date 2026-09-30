@@ -197,6 +197,293 @@ jobs:
           print("Menu de três pontos preparado; navegação inferior será ocultada.")
           PY
 
+      - name: Cadastro único do cliente
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <style id="cadastro-unico-cliente-style">
+          #gc-cadastro-overlay,#gc-perfil-overlay{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72)}
+          #gc-cadastro-overlay.aberto,#gc-perfil-overlay.aberto{display:flex}
+          .gc-modal{width:min(430px,100%);max-height:90vh;overflow:auto;background:#11161a;color:#fff;border:1px solid rgba(242,193,78,.35);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.65);padding:22px}
+          .gc-modal h2{margin:0 0 8px;color:#f2c14e;font:800 24px Arial,sans-serif}
+          .gc-modal p{margin:0 0 18px;color:#c7ccd2;font:400 14px/1.45 Arial,sans-serif}
+          .gc-modal label{display:block;margin:12px 0 6px;color:#fff;font:700 13px Arial,sans-serif}
+          .gc-modal input{box-sizing:border-box;width:100%;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#171c20;color:#fff;padding:13px 14px;font:600 16px Arial,sans-serif;outline:none}
+          .gc-modal input:focus{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.12)}
+          .gc-modal .gc-acoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+          .gc-modal button{border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:13px 14px;background:#171c20;color:#fff;font:800 15px Arial,sans-serif;cursor:pointer}
+          .gc-modal button.gc-principal{background:#f2c14e;color:#171717;border-color:#f2c14e}
+          .gc-modal button:disabled{opacity:.55;cursor:wait}
+          #gc-cadastro-msg,#gc-perfil-msg{min-height:18px;margin-top:10px;font:600 13px Arial,sans-serif}
+          .gc-ok{color:#4dcc83}.gc-erro{color:#ff667a}.gc-info{color:#c7ccd2}
+          .gc-telefone-salvo{font:600 12px Arial,sans-serif;color:#8f989f;margin-top:5px}
+          input.gc-cliente-preenchido{border-color:rgba(242,193,78,.28)!important}
+          </style>
+
+          <div id="gc-cadastro-overlay" aria-hidden="true">
+            <div class="gc-modal" role="dialog" aria-modal="true" aria-labelledby="gc-cadastro-titulo">
+              <h2 id="gc-cadastro-titulo">👤 Vamos cadastrar você</h2>
+              <p>Faça o cadastro uma única vez. Depois, ao agendar, seu nome e telefone serão preenchidos automaticamente.</p>
+              <label for="gc-cadastro-nome">Nome completo</label>
+              <input id="gc-cadastro-nome" type="text" maxlength="120" autocomplete="name" placeholder="Digite seu nome">
+              <label for="gc-cadastro-telefone">Telefone</label>
+              <input id="gc-cadastro-telefone" type="tel" maxlength="15" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999">
+              <label for="gc-cadastro-email">E-mail <span style="font-weight:400;color:#8f989f">(opcional)</span></label>
+              <input id="gc-cadastro-email" type="email" maxlength="160" autocomplete="email" placeholder="seuemail@exemplo.com">
+              <div id="gc-cadastro-msg"></div>
+              <div class="gc-acoes">
+                <button type="button" class="gc-principal" id="gc-cadastro-salvar">Continuar</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="gc-perfil-overlay" aria-hidden="true">
+            <div class="gc-modal" role="dialog" aria-modal="true" aria-labelledby="gc-perfil-titulo">
+              <h2 id="gc-perfil-titulo">👤 Meu perfil</h2>
+              <p>Seus dados ficam salvos para que você não precise digitá-los novamente ao agendar.</p>
+              <label for="gc-perfil-nome">Nome completo</label>
+              <input id="gc-perfil-nome" type="text" maxlength="120" autocomplete="name">
+              <label for="gc-perfil-telefone">Telefone</label>
+              <input id="gc-perfil-telefone" type="tel" maxlength="15" inputmode="numeric" autocomplete="tel">
+              <label for="gc-perfil-email">E-mail <span style="font-weight:400;color:#8f989f">(opcional)</span></label>
+              <input id="gc-perfil-email" type="email" maxlength="160" autocomplete="email">
+              <div id="gc-perfil-msg"></div>
+              <div class="gc-acoes">
+                <button type="button" id="gc-perfil-fechar">Fechar</button>
+                <button type="button" class="gc-principal" id="gc-perfil-salvar">Salvar</button>
+              </div>
+            </div>
+          </div>
+
+          <script id="cadastro-unico-cliente-script">
+          (function(){
+            var PHONE_KEY="gleison_telefone";
+            var NAME_KEY="gleison_nome";
+            var EMAIL_KEY="gleison_email";
+
+            function digits(v){return String(v||"").replace(/\D/g,"");}
+            function fmtPhone(v){
+              var d=digits(v).slice(0,11);
+              if(d.length<=2)return d;
+              if(d.length<=7)return "("+d.slice(0,2)+") "+d.slice(2);
+              return "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
+            }
+            function getSB(){
+              try{
+                if(typeof supabaseClient!=="undefined" && supabaseClient) return supabaseClient;
+              }catch(e){}
+              return window.supabaseClient||null;
+            }
+            function getSaved(){
+              return {
+                nome:(localStorage.getItem(NAME_KEY)||"").trim(),
+                telefone:(localStorage.getItem(PHONE_KEY)||"").trim(),
+                email:(localStorage.getItem(EMAIL_KEY)||"").trim()
+              };
+            }
+            function saveLocal(c){
+              try{
+                localStorage.setItem(NAME_KEY,c.nome||"");
+                localStorage.setItem(PHONE_KEY,c.telefone||"");
+                localStorage.setItem(EMAIL_KEY,c.email||"");
+              }catch(e){}
+            }
+            function setMsg(id,text,cls){
+              var el=document.getElementById(id);
+              if(el){el.textContent=text||"";el.className=cls||"gc-info";}
+            }
+            function abrir(id){
+              var el=document.getElementById(id);
+              if(el){el.classList.add("aberto");el.setAttribute("aria-hidden","false");}
+            }
+            function fechar(id){
+              var el=document.getElementById(id);
+              if(el){el.classList.remove("aberto");el.setAttribute("aria-hidden","true");}
+            }
+
+            async function rpc(nome,args){
+              var sb=getSB();
+              if(!sb || typeof sb.rpc!=="function") throw new Error("Sistema ainda está carregando. Tente novamente.");
+              var r=await sb.rpc(nome,args);
+              if(r.error) throw r.error;
+              return Array.isArray(r.data)?(r.data[0]||null):r.data;
+            }
+
+            function preencherCampos(){
+              var c=getSaved();
+              if(!c.telefone || digits(c.telefone).length!==11)return;
+
+              var inputs=Array.prototype.slice.call(document.querySelectorAll("input"));
+              inputs.forEach(function(el){
+                if(el.closest("#gc-cadastro-overlay,#gc-perfil-overlay"))return;
+                var meta=((el.id||"")+" "+(el.name||"")+" "+(el.placeholder||"")).toLowerCase();
+                if(el.type==="tel" || /telefone|celular|phone/.test(meta)){
+                  el.value=fmtPhone(c.telefone);
+                  el.readOnly=true;
+                  el.setAttribute("aria-readonly","true");
+                  el.classList.add("gc-cliente-preenchido");
+                  el.dispatchEvent(new Event("input",{bubbles:true}));
+                  el.dispatchEvent(new Event("change",{bubbles:true}));
+                }
+                if(el.type==="email" || /e-?mail/.test(meta)){
+                  if(c.email){el.value=c.email;el.readOnly=true;el.setAttribute("aria-readonly","true");}
+                }
+                if(/nome|name/.test(meta) && el.type==="text"){
+                  if(c.nome){el.value=c.nome;el.readOnly=true;el.setAttribute("aria-readonly","true");el.classList.add("gc-cliente-preenchido");}
+                }
+              });
+            }
+
+            async function carregarCadastroExistente(){
+              var c=getSaved();
+              if(digits(c.telefone).length!==11)return false;
+              try{
+                var remoto=await rpc("obter_cliente_telefone",{p_telefone:c.telefone});
+                if(remoto){
+                  saveLocal({
+                    nome:remoto.nome||c.nome,
+                    telefone:remoto.telefone||c.telefone,
+                    email:remoto.email||c.email
+                  });
+                }
+                return true;
+              }catch(e){
+                return true;
+              }
+            }
+
+            function prepararModalInicial(){
+              var c=getSaved();
+              var nome=document.getElementById("gc-cadastro-nome");
+              var tel=document.getElementById("gc-cadastro-telefone");
+              var email=document.getElementById("gc-cadastro-email");
+              if(nome)nome.value=c.nome;
+              if(tel)tel.value=fmtPhone(c.telefone);
+              if(email)email.value=c.email;
+              if(digits(c.telefone).length!==11)abrir("gc-cadastro-overlay");
+            }
+
+            async function salvarCadastro(){
+              var btn=document.getElementById("gc-cadastro-salvar");
+              var nome=(document.getElementById("gc-cadastro-nome")||{}).value||"";
+              var telefone=(document.getElementById("gc-cadastro-telefone")||{}).value||"";
+              var email=(document.getElementById("gc-cadastro-email")||{}).value||"";
+              var d=digits(telefone);
+              if(nome.trim().length<2){setMsg("gc-cadastro-msg","Digite seu nome completo.","gc-erro");return;}
+              if(d.length!==11){setMsg("gc-cadastro-msg","Digite um telefone com DDD.","gc-erro");return;}
+              if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setMsg("gc-cadastro-msg","Confira o e-mail informado.","gc-erro");return;}
+              btn.disabled=true;
+              setMsg("gc-cadastro-msg","Salvando seu cadastro...","gc-info");
+              try{
+                var c=await rpc("salvar_cadastro_cliente",{p_nome:nome.trim(),p_telefone:d,p_email:email.trim()||null});
+                if(!c)throw new Error("Não foi possível salvar o cadastro.");
+                saveLocal({nome:c.nome||nome.trim(),telefone:c.telefone||d,email:c.email||email.trim()});
+                fechar("gc-cadastro-overlay");
+                setMsg("gc-cadastro-msg","","");
+                preencherCampos();
+              }catch(e){
+                setMsg("gc-cadastro-msg",e.message||"Não foi possível salvar o cadastro.","gc-erro");
+              }finally{
+                btn.disabled=false;
+              }
+            }
+
+            function abrirPerfil(){
+              var c=getSaved();
+              document.getElementById("gc-perfil-nome").value=c.nome||"";
+              document.getElementById("gc-perfil-telefone").value=fmtPhone(c.telefone||"");
+              document.getElementById("gc-perfil-email").value=c.email||"";
+              setMsg("gc-perfil-msg","","");
+              abrir("gc-perfil-overlay");
+            }
+
+            async function salvarPerfil(){
+              var btn=document.getElementById("gc-perfil-salvar");
+              var c=getSaved();
+              var nome=document.getElementById("gc-perfil-nome").value.trim();
+              var novo=digits(document.getElementById("gc-perfil-telefone").value);
+              var email=document.getElementById("gc-perfil-email").value.trim();
+              if(nome.length<2){setMsg("gc-perfil-msg","Digite seu nome completo.","gc-erro");return;}
+              if(novo.length!==11){setMsg("gc-perfil-msg","Digite um telefone com DDD.","gc-erro");return;}
+              if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setMsg("gc-perfil-msg","Confira o e-mail informado.","gc-erro");return;}
+              btn.disabled=true;
+              setMsg("gc-perfil-msg","Salvando...","gc-info");
+              try{
+                var r=await rpc("atualizar_perfil_cliente",{
+                  p_telefone_atual:c.telefone,
+                  p_nome:nome,
+                  p_novo_telefone:novo,
+                  p_email:email||null
+                });
+                if(!r)throw new Error("Não foi possível atualizar o perfil.");
+                saveLocal({nome:r.nome||nome,telefone:r.telefone||novo,email:r.email||email});
+                fechar("gc-perfil-overlay");
+                preencherCampos();
+              }catch(e){
+                setMsg("gc-perfil-msg",e.message||"Não foi possível atualizar o perfil.","gc-erro");
+              }finally{
+                btn.disabled=false;
+              }
+            }
+
+            function ligarEventos(){
+              var b=document.getElementById("gc-cadastro-salvar");
+              if(b)b.addEventListener("click",salvarCadastro);
+              var pf=document.getElementById("gc-perfil-fechar");
+              if(pf)pf.addEventListener("click",function(){fechar("gc-perfil-overlay");});
+              var ps=document.getElementById("gc-perfil-salvar");
+              if(ps)ps.addEventListener("click",salvarPerfil);
+
+              ["gc-cadastro-telefone","gc-perfil-telefone"].forEach(function(id){
+                var el=document.getElementById(id);
+                if(el)el.addEventListener("input",function(){this.value=fmtPhone(this.value);});
+              });
+
+              var pm=document.querySelector('[data-menu-acao="perfil"]');
+              if(pm)pm.addEventListener("click",function(e){
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                fechar("gc-cadastro-overlay");
+                abrirPerfil();
+              },true);
+
+              ["gc-cadastro-overlay","gc-perfil-overlay"].forEach(function(id){
+                var ov=document.getElementById(id);
+                if(ov)ov.addEventListener("click",function(e){if(e.target===ov && id==="gc-perfil-overlay")fechar(id);});
+              });
+            }
+
+            async function iniciar(){
+              ligarEventos();
+              var tem=await carregarCadastroExistente();
+              if(!tem)prepararModalInicial();
+              preencherCampos();
+
+              var observer=new MutationObserver(function(){preencherCampos();});
+              if(document.body)observer.observe(document.body,{childList:true,subtree:true});
+              setInterval(preencherCampos,1500);
+            }
+
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);
+            else setTimeout(iniciar,500);
+
+            window.gleisonAbrirPerfil=abrirPerfil;
+          })();
+          </script>
+          '''
+
+          if 'id="cadastro-unico-cliente-style"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+
+          p.write_text(s,encoding="utf-8")
+          print("Cadastro único do cliente adicionado.")
+          PY
+
       - name: Marcar atendimentos encerrados
         run: |
           python3 - <<'PY'
