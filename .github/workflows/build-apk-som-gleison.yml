@@ -25,11 +25,14 @@ jobs:
         run: |
           # O ZIP do projeto Android contém uma versão antiga do index.html.
           # O sistema oficial atual é o site gerado pelo workflow Publicar sistema online.
-          RUN_ID="$(gh run list --workflow deploy-site.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          RUN_ID="$(gh api "repos/${{ github.repository }}/actions/workflows/deploy-site.yml/runs?status=success&branch=main&per_page=10" --jq '.workflow_runs | map(select(.head_sha != "${{ github.sha }}")) | .[0].id')"
           test -n "$RUN_ID"
+          ARTIFACT_ID="$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts?per_page=20" --jq '.artifacts[] | select(.name=="github-pages" and .expired==false) | .id' | head -n 1)"
+          test -n "$ARTIFACT_ID"
           rm -rf /tmp/site-atual
           mkdir -p /tmp/site-atual
-          gh run download "$RUN_ID" -n github-pages -D /tmp/site-atual
+          gh api --method GET -H "Accept: application/vnd.github+json" "/repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/github-pages.zip
+          unzip -q -o /tmp/github-pages.zip -d /tmp/site-atual
           CURRENT_INDEX="$(find /tmp/site-atual -type f -name index.html -print -quit)"
           test -n "$CURRENT_INDEX"
           cp "$CURRENT_INDEX" GleisonBarbeariaAndroid/app/src/main/assets/index.html
@@ -42,7 +45,7 @@ jobs:
           grep -q 'btn-atualizar-online' GleisonBarbeariaAndroid/app/src/main/assets/index.html
           grep -q 'Meu histórico' GleisonBarbeariaAndroid/app/src/main/assets/index.html
           grep -q 'Administrador' GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          echo "Sistema online atual copiado para o APK a partir do deploy #$RUN_ID."
+          echo "Sistema online atual copiado para o APK a partir do deploy #$RUN_ID (artefato $ARTIFACT_ID)."
 
           cat > GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/MainActivity.java <<'JAVA'
           package com.gleisonbarbearia.app;
@@ -85,46 +88,6 @@ jobs:
           fi
           echo "WebView configurado para abrir o sistema atual."
 
-          cat > GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/MainActivity.java <<'JAVA'
-          package com.gleisonbarbearia.app;
-
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-
-          public class MainActivity extends Activity {
-              private WebView webView;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  webView = new WebView(this);
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setDatabaseEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
-                  webView.setWebViewClient(new WebViewClient());
-                  setContentView(webView);
-                  webView.loadUrl("file:///android_asset/index.html");
-              }
-
-              @Override
-              public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) webView.goBack();
-                  else super.onBackPressed();
-              }
-          }
-          JAVA
-
-          MANIFEST="GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml"
-          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
-            sed -i '/<manifest[^>]*>/a\\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
-          fi
-          echo "Sistema completo preparado no WebView."
 
       - name: Instalar FFmpeg
         run: |
