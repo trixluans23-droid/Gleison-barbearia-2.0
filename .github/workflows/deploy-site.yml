@@ -791,22 +791,6 @@ jobs:
           print("Validação das regras do administrador OK.")
           PY
 
-      - name: Inspecionar acesso administrativo
-        run: |
-          echo "=== ARQUIVOS HTML ==="
-          find GleisonBarbeariaAndroid -iname "*.html" -type f | sort
-          echo "=== TERMOS ADMIN ==="
-          grep -RniE "admin|administrador|painel|login|senha|gestor" GleisonBarbeariaAndroid/app/src/main/assets --include="*.html" --include="*.js" | head -200 || true
-          echo "=== INDEX ADMIN CONTEXT ==="
-          grep -niE -C 5 "admin|administrador|painel|login|senha" GleisonBarbeariaAndroid/app/src/main/assets/index.html | head -300 || true
-        
-      - name: Criar artefato para inspeção administrativa
-        uses: actions/upload-artifact@v4
-        with:
-          name: fonte-admin-inspecao
-          path: GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          retention-days: 1
-
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
