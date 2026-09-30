@@ -1519,7 +1519,7 @@ jobs:
             async function enviar(){
               var b=document.getElementById("gc-rec-senha-enviar");
               var email=emailVal();
-              if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){msg("gc-rec-senha-msg","Digite um e-mail válido.","gc-rec-senha-erro");return}
+              if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg("gc-rec-senha-msg","Digite um e-mail válido.","gc-rec-senha-erro");return}
               var client=sb();
               if(!client||!client.auth){msg("gc-rec-senha-msg","Sistema ainda está carregando. Tente novamente.","gc-rec-senha-erro");return}
               b.disabled=true;
