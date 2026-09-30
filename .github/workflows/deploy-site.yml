@@ -39,6 +39,37 @@ jobs:
 
           echo "Sistema preparado para publicação."
 
+      - name: Adicionar botão Atualizar
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("site/index.html")
+          s = p.read_text(encoding="utf-8")
+
+          code = r'''
+          <button id="btn-atualizar-online" type="button" aria-label="Atualizar sistema">↻ Atualizar</button>
+          <style>
+          #btn-atualizar-online{position:fixed;right:16px;bottom:78px;z-index:2147483646;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:10px 16px;background:#f2c14e;color:#111;font:700 14px Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer}
+          #btn-atualizar-online:active{transform:scale(.96)}
+          </style>
+          <script>
+          document.getElementById("btn-atualizar-online").addEventListener("click",function(){
+            this.disabled=true;
+            this.textContent="↻ Atualizando...";
+            var base=window.location.pathname;
+            window.location.replace(base+"?atualizar="+Date.now());
+          });
+          </script>
+          '''
+
+          if 'id="btn-atualizar-online"' not in s and "<body>" in s:
+              s = s.replace("<body>", "<body>" + code, 1)
+              p.write_text(s, encoding="utf-8")
+
+          print("Botão Atualizar adicionado ao sistema online.")
+          PY
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
