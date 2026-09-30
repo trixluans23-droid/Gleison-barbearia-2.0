@@ -2465,7 +2465,13 @@ document.addEventListener('DOMContentLoaded', async function(){
 <!-- Atualização automática de 10 segundos removida. A agenda agora carrega ao trocar a data e ao abrir a tela. -->
 <script>
 (function(){
-let mesAgendaAdmin=new Date(); mesAgendaAdmin.setDate(1);
+function dataHojeAgendaAdmin(){
+  const base=hojeLocal();
+  const p=String(base).split('-').map(Number);
+  return {iso:base,y:p[0],m:p[1]-1,d:p[2]};
+}
+const hojeAgendaInicial=dataHojeAgendaAdmin();
+let mesAgendaAdmin=new Date(hojeAgendaInicial.y,hojeAgendaInicial.m,1);
 const nomes=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function pad(n){return String(n).padStart(2,'0')}
@@ -2482,9 +2488,20 @@ window.carregarCalendarioAgendaAdmin=async function(){
    const iso=dataLocal(y,m,d), dow=new Date(y,m,d).getDay();
    const b=document.createElement('button'); b.type='button'; b.textContent=d;
    b.style.cssText='min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-weight:900;font-size:15px;position:relative;cursor:pointer;';
+   const hojeAgenda=dataHojeAgendaAdmin().iso;
+   const selecionadaAgenda=String(document.getElementById('data')?.value||'');
+   if(iso===hojeAgenda){
+     b.style.border='2px solid var(--gold2)';
+     b.style.boxShadow='0 0 0 2px rgba(242,199,102,.18)';
+     b.innerHTML='<span>'+d+'</span><span style="display:block;font-size:9px;color:var(--gold2);margin-top:2px">HOJE</span>';
+   }
+   if(iso===selecionadaAgenda){
+     b.style.outline='2px solid var(--text)';
+     b.style.outlineOffset='1px';
+   }
    if(dow===0||dow===1){b.style.opacity='.45';}
-   b.title='Abrir agenda de '+iso;
-   b.onclick=()=>{const input=document.getElementById('data'); if(input){input.value=iso; input.dispatchEvent(new Event('change',{bubbles:true}));} else {carregarAgenda();} carregarAgenda().catch(console.error);};
+   b.title=iso===hojeAgenda ? '📅 Hoje — '+iso : 'Abrir agenda de '+iso;
+   b.onclick=()=>{const input=document.getElementById('data'); if(input){input.value=iso; mesAgendaAdmin=new Date(y,m,1); input.dispatchEvent(new Event('change',{bubbles:true}));} else {carregarAgenda();} carregarAgenda().catch(console.error);};
    box.appendChild(b); botoes[iso]=b;
  }
  try{
@@ -2499,8 +2516,10 @@ window.carregarCalendarioAgendaAdmin=async function(){
      const ativos=(Array.isArray(rows)?rows:[]).filter(x=>x && !['cancelado','faltou'].includes(String(x.status||'').toLowerCase()));
      const todos=(Array.isArray(rows)?rows:[]).length;
      if(ativos.length){
-       b.style.borderColor='var(--gold)'; b.style.boxShadow='inset 0 -4px 0 var(--gold)'; b.title='📅 '+ativos.length+' agendamento(s) em '+iso;
-       b.innerHTML=datas ? '<span>'+iso.slice(8).replace(/^0/,'')+'</span><span style="display:block;font-size:11px;color:var(--gold);margin-top:2px">● '+ativos.length+'</span>' : b.textContent;
+       b.style.borderColor=iso===dataHojeAgendaAdmin().iso ? 'var(--gold2)' : 'var(--gold)'; 
+       b.style.boxShadow=iso===dataHojeAgendaAdmin().iso ? '0 0 0 2px rgba(242,199,102,.18), inset 0 -4px 0 var(--gold)' : 'inset 0 -4px 0 var(--gold)';
+       b.title='📅 '+ativos.length+' agendamento(s) em '+iso;
+       b.innerHTML='<span>'+iso.slice(8).replace(/^0/,'')+'</span><span style="display:block;font-size:9px;color:var(--gold2);margin-top:2px">'+(iso===dataHojeAgendaAdmin().iso?'HOJE • ':'')+'● '+ativos.length+'</span>';
      } else if(todos){
        b.style.borderColor='var(--muted)'; b.title='Histórico em '+iso+' ('+todos+' registro(s))';
      }
@@ -2516,7 +2535,26 @@ window.carregarCalendarioAgendaAdmin=async function(){
    }catch(e){console.warn('Exceções no calendário da agenda:',e);}
  }catch(e){console.warn('Calendário da agenda:',e);}
 };
-document.addEventListener('DOMContentLoaded',()=>{setTimeout(carregarCalendarioAgendaAdmin,300);});
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{
+    const input=document.getElementById('data');
+    const hoje=dataHojeAgendaAdmin().iso;
+    if(input && (!input.value || input.value < hoje)) input.value=hoje;
+    carregarCalendarioAgendaAdmin();
+  },300);
+  const input=document.getElementById('data');
+  if(input && input.dataset.calendarioSincronizado!=='1'){
+    input.dataset.calendarioSincronizado='1';
+    input.addEventListener('change',()=>{
+      const valor=input.value;
+      if(/^\d{4}-\d{2}-\d{2}$/.test(valor)){
+        const p=valor.split('-').map(Number);
+        mesAgendaAdmin=new Date(p[0],p[1]-1,1);
+      }
+      carregarCalendarioAgendaAdmin();
+    });
+  }
+});
 })();
 </script>
 </script>
