@@ -1420,6 +1420,16 @@ jobs:
           s=re.sub(r"<style[^>]*id=[\"']reconhecimento-biometrico-online-style[\"'][^>]*>.*?</style>\\s*", "", s, flags=re.S|re.I)
           s=re.sub(r"<script[^>]*id=[\"']reconhecimento-biometrico-online-script[\"'][^>]*>.*?</script>\\s*", "", s, flags=re.S|re.I)
 
+          # Remove também a recuperação antiga por magic link/OTP, para impedir o e-mail "Your sign-in link".
+          def limpar_magic_link(m):
+              body=m.group(2)
+              if "signInWithOtp" in body or "gc-recuperacao-overlay" in body or "recuperacao-conta-cliente-script" in body:
+                  return ""
+              return m.group(0)
+          s=re.sub(r'(<script\\b[^>]*>)(.*?)(</script>)', limpar_magic_link, s, flags=re.S|re.I)
+          s=re.sub(r'<button\\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</button>\\s*', '', s, flags=re.S|re.I)
+          s=re.sub(r'<a\\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</a>\\s*', '', s, flags=re.S|re.I)
+
           # Remove qualquer script adicional que tenha sido criado especificamente para passkey/biometria.
           def limpar_script(m):
               tag,body,end=m.group(1),m.group(2),m.group(3)
@@ -1649,7 +1659,7 @@ jobs:
           ]
           for x in checks:
               if x not in s: raise SystemExit("Faltando: "+x)
-          for x in ("signInWithPasskey","registerPasskey","Ativar recuperação por biometria","Recuperar com reconhecimento facial"):
+          for x in ("signInWithPasskey","registerPasskey","signInWithOtp","Ativar recuperação por biometria","Recuperar com reconhecimento facial","Recuperar acesso pelo e-mail","Já sou cliente e perdi meu acesso"):
               if x in s: raise SystemExit("Biometria ainda presente: "+x)
           print("Recuperação por senha via e-mail validada; biometria removida.")
           PY
