@@ -153,7 +153,77 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 .preco-admin-valor input{min-width:0;background:#ffffff !important;color:#111111 !important;-webkit-text-fill-color:#111111 !important;caret-color:#111111 !important;font-weight:900;font-size:18px;border:2px solid #d8d8d8}.preco-admin-valor input::placeholder{color:#777 !important;-webkit-text-fill-color:#777 !important;opacity:1}
 @media(max-width:520px){.preco-admin-item{grid-template-columns:1fr}.preco-admin-valor{max-width:220px}}
 </style>
-<style>.preco-admin-input::placeholder{color:#555 !important;opacity:1 !important;-webkit-text-fill-color:#555 !important}.preco-admin-input:disabled{color:#111 !important;-webkit-text-fill-color:#111 !important;opacity:1 !important}</style></head>
+<style>.preco-admin-input::placeholder{color:#555 !important;opacity:1 !important;-webkit-text-fill-color:#555 !important}.preco-admin-input:disabled{color:#111 !important;-webkit-text-fill-color:#111 !important;opacity:1 !important}</style><style>
+/* V40 — notificações internas do administrador */
+.notificacao-admin-btn{position:relative;min-height:58px;font-size:16px;font-weight:900}
+.notificacao-badge{position:absolute;top:6px;right:8px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:#d71920;color:#fff;font-size:12px;display:none;align-items:center;justify-content:center;box-sizing:border-box}
+.notificacao-card{border:1px solid var(--line);border-radius:14px;padding:13px;margin:9px 0;background:var(--panel)}
+.notificacao-card.nova{border-width:2px}
+.notificacao-meta{font-size:12px;color:var(--muted);margin-top:6px}
+</style><style>/* V41 */.notificacao-topo-btn{position:relative;width:44px;height:44px;min-width:44px;padding:0!important;border-radius:50%;display:inline-grid;place-items:center;font-size:21px!important;font-weight:900;line-height:1}.notificacao-topo-btn .notificacao-badge{top:-5px;right:-5px;min-width:19px;height:19px;font-size:11px;padding:0 4px;border:2px solid var(--bg)}</style><style>
+/* V43 — notificações em tela cheia dentro do app */
+#viewNotificacoes.notificacoes-fullscreen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9999!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100vh!important;
+  margin:0!important;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+  overflow-y:auto!important;
+  background:var(--bg)!important;
+}
+#viewNotificacoes.notificacoes-fullscreen .card{
+  max-width:900px;
+  margin-left:auto;
+  margin-right:auto;
+}
+#viewNotificacoes.notificacoes-fullscreen .admin-voltar{
+  max-width:900px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+body.notificacoes-abertas{overflow:hidden!important;}
+</style>
+
+<style>
+/* V44 — telas administrativas em tela cheia */
+.admin-view.admin-fullscreen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9998!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100vh!important;
+  margin:0!important;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+  overflow-y:auto!important;
+  background:var(--bg)!important;
+}
+.admin-view.admin-fullscreen > .card,
+.admin-view.admin-fullscreen > .section,
+.admin-view.admin-fullscreen .card,
+.admin-view.admin-fullscreen .message-panel,
+.admin-view.admin-fullscreen .toolbar,
+.admin-view.admin-fullscreen .summary,
+.admin-view.admin-fullscreen .list{
+  max-width:900px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.admin-view.admin-fullscreen .admin-voltar{
+  max-width:900px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+body.admin-tela-cheia-aberta{overflow:hidden!important;}
+</style>
+</head>
 <body>
 <div id="adminLogin">
   <div class="login-card">
@@ -187,7 +257,7 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <div style="display:flex;align-items:center;gap:8px">
 <input accept="image/*" id="fotoBarbeiroInput" onchange="enviarFotoBarbeiro(event)" style="display:none" type="file"/>
 <button class="btn" id="btnFotoBarbeiro" onclick="document.getElementById('fotoBarbeiroInput').click()" type="button">📷 Foto</button>
-<button class="btn" id="atualizarTudoAdminBtn" onclick="atualizarTudoAdminAgora(this)" type="button">↻ Atualizar</button>
+<button class="btn notificacao-topo-btn" id="btnNotificacoesTopo" onclick="abrirNotificacoesDireto()" type="button" title="Notificações">🔔<span id="notificacaoBadgeAdmin" class="notificacao-badge">0</span></button><button class="btn" id="atualizarTudoAdminBtn" onclick="atualizarTudoAdminAgora(this)" type="button">↻ Atualizar</button>
 <button class="btn" id="btnLogoutAdmin" onclick="sairAdmin()" type="button">Sair</button>
 </div>
 </header>
@@ -202,6 +272,17 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <div class="small" style="margin-bottom:12px">Escolha um dia futuro. Você pode <b>abrir domingo/segunda</b> excepcionalmente ou <b>fechar qualquer dia</b> em que a barbearia não poderá trabalhar.</div>
 <label for="excecaoDataAdmin" style="display:block;font-weight:800;margin-bottom:6px">Data</label>
 <input id="excecaoDataAdmin" type="date" style="width:100%;box-sizing:border-box"/>
+<div id="calendarioFechamentosAdmin" style="margin-top:12px;border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--panel2)">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+    <button class="btn" id="calFechAnterior" type="button" style="min-width:48px" onclick="mudarMesFechamentosAdmin(-1)">‹</button>
+    <div id="calFechTitulo" style="font-weight:900;text-align:center">Carregando...</div>
+    <button class="btn" id="calFechProximo" type="button" style="min-width:48px" onclick="mudarMesFechamentosAdmin(1)">›</button>
+  </div>
+  <div id="calFechGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center"></div>
+  <div style="margin-top:10px;font-size:13px;font-weight:800;display:flex;gap:14px;flex-wrap:wrap">
+    <span>🔴 Fechado excepcionalmente</span><span>⚪ Fechado por padrão</span>
+  </div>
+</div>
 <div id="excecaoStatusAdmin" class="small" style="margin-top:10px;font-weight:800">⏳ Verificando...</div>
 <div id="excecaoMotivoAdmin" class="small" style="margin-top:5px"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
@@ -210,15 +291,34 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 </div>
 <button class="btn" id="btnRestaurarExcecaoAdmin" onclick="restaurarPadraoDiaAdmin()" style="width:100%;margin-top:8px" type="button">↩️ Restaurar padrão</button>
 <div id="excecaoMensagemAdmin" style="margin-top:10px"></div>
-</div><div class="admin-menu-title">PAINEL DO GLEISON</div><div class="admin-menu"><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('precos')" type="button">💲 Preços</button></div>
+</div><div class="admin-menu-title">PAINEL DO GLEISON</div><div class="admin-menu"><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('precos')" type="button">💲 Preços</button></div>
+
+<section class="section admin-view" id="viewNotificacoes">
+<button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button>
+<div class="card">
+<div style="font-weight:900;font-size:20px">🔔 Notificações</div>
+<div class="small" style="margin-top:5px">Todas as notificações de novos agendamentos aparecem aqui.</div>
+<div id="listaNotificacoesAdmin" style="margin-top:12px"><div class="card empty">Carregando...</div></div>
+</div>
+</section>
 
 <section class="section admin-view" id="viewAgenda">
+<div class="card" style="margin-bottom:14px">
+  <div class="row"><div><div style="font-weight:900;font-size:18px">📅 Calendário da agenda</div><div class="small">Escolha um dia para abrir os agendamentos daquele dia.</div></div><button class="btn" type="button" onclick="carregarCalendarioAgendaAdmin()">↻ Atualizar</button></div>
+  <div class="card" style="margin-top:12px;background:var(--panel2)">
+    <div class="row"><button class="btn" type="button" onclick="mudarMesAgendaAdmin(-1)">‹</button><div id="tituloMesAgendaAdmin" style="font-weight:900;font-size:18px;text-align:center">Calendário</div><button class="btn" type="button" onclick="mudarMesAgendaAdmin(1)">›</button></div>
+    <div id="calendarioAgendaAdmin" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px"></div>
+    <div class="small" style="margin-top:10px">🟡 Dia com agendamento &nbsp; 🔴 Fechado &nbsp; ⚪ Sem agendamento</div>
+  </div>
+</div>
+
+<button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button>
 <div class="toolbar">
 <div>
 <label for="data">Data da agenda</label>
-<input id="data" type="date"/>
+<input id="data" type="date" onchange="carregarAgenda()"/>
 </div>
-<button class="btn primary" onclick="carregarAgenda()">Ver agenda</button>
+<button class="btn" onclick="carregarAgenda()">↻ Atualizar agenda</button>
 </div>
 <div id="mensagem"></div>
 <div class="summary">
@@ -230,7 +330,7 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <button class="btn history-toggle" id="historicoBtn" onclick="alternarHistorico()">Mostrar cancelados e faltas</button>
 <div class="history-note" id="historicoNota">Cancelados e faltas ficam ocultos por padrão.</div>
 <div class="list" id="lista">
-<div class="card empty">Escolha a data e toque em <b>Ver agenda</b>.</div>
+<div class="card empty">Escolha uma data. A agenda será carregada automaticamente.</div>
 </div>
 </section><div class="admin-view" id="viewMensagens"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card message-panel" id="painelMensagens">
 <div class="row">
@@ -390,6 +490,8 @@ async function inicializarPainelAdmin(){
   if(!ADMIN_AUTH_READY) return;
   document.getElementById('data').value=hojeLocal();
   await Promise.allSettled([carregarServicosAdmin(),carregarFotoBarbeiro(),carregarStatusBarbearia(),carregarMensagensAdmin()]);
+  await atualizarNotificacoesAdminSilencioso();
+  if(!window.__intervalNotificacoesAdmin) window.__intervalNotificacoesAdmin=setInterval(atualizarNotificacoesAdminSilencioso,15000);
   iniciarControleExcecaoAdmin();
   await verPeriodo('dia');
 }
@@ -694,6 +796,7 @@ async function carregarAgenda(){
 
   try{
     const rows = await chamarRPC('listar_agenda_admin_foto',{p_data:data});
+    window.__agendaAdminRows = Array.isArray(rows) ? rows : [];
 
     if(!rows || !rows.length){
       atualizarResumo([]);
@@ -710,6 +813,8 @@ async function carregarAgenda(){
     }
 
     const rowsComFoto = await Promise.all(rowsVisiveis.map(async a => {
+      a.servico = a.servico || a.servico_nome || 'Serviço não informado';
+      a.barbeiro = a.barbeiro || a.barbeiro_nome || 'Gleison';
       let caminhoFoto = a.foto_url || '';
       if(!caminhoFoto && a.telefone){
         caminhoFoto = await buscarFotoPorTelefoneAdmin(a.telefone);
@@ -744,14 +849,24 @@ async function carregarAgenda(){
         ${status==='agendado' ? `
         <div class="actions">
           <button class="btn primary" onclick="alterarStatus('${escapeHtml(a.id)}','confirmado')">✓ Confirmar</button>
+          <button class="btn" type="button" data-remarcar-id="${escapeHtml(a.id)}">🔄 Remarcar</button>
           <button class="btn" onclick="alterarStatus('${escapeHtml(a.id)}','cancelado')">Cancelar</button>
         </div>` : status==='confirmado' ? `
         <div class="actions">
           <button class="btn primary" onclick="alterarStatus('${escapeHtml(a.id)}','atendido')">✓ Concluído</button>
+          <button class="btn" type="button" data-remarcar-id="${escapeHtml(a.id)}">🔄 Remarcar</button>
           <button class="btn" onclick="alterarStatus('${escapeHtml(a.id)}','cancelado')">Cancelar</button>
         </div>` : ''}
       </div>`;
     }).join('');
+
+    lista.querySelectorAll('[data-remarcar-id]').forEach(btn => {
+      btn.addEventListener('click', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        const id=this.getAttribute('data-remarcar-id');
+        if(id && typeof window.remarcarAgendamentoAdmin==='function') window.remarcarAgendamentoAdmin(id);
+      });
+    });
 
     lista.querySelectorAll('.foto-cliente').forEach(img => {
       img.addEventListener('click', () => {
@@ -883,7 +998,6 @@ async function criarUrlFotoAdmin(path){
     return dados.signedURL.startsWith('http') ? dados.signedURL : SUPABASE_URL + '/storage/v1' + dados.signedURL;
   }catch(e){ return ''; }
 }
-
 async function carregarMensagensAdmin(){
   const lista=document.getElementById('mensagensAdminLista');
   if(!lista) return;
@@ -931,21 +1045,11 @@ async function carregarMensagensAdmin(){
   }
 }
 
-async function atualizarTudoAdminAgora(btn){
+function atualizarTudoAdminAgora(btn){
   if(btn){ btn.disabled=true; btn.textContent='⏳ Atualizando...'; }
-  try{
-    await carregarAgenda();
-    await carregarMensagensAdmin();
-    if(typeof atualizarFinanceiro === 'function') await atualizarFinanceiro();
-    if(btn) btn.textContent='✓ Atualizado';
-    showToastAdmin('Agenda, mensagens e financeiro atualizados.');
-  }catch(e){
-    console.error('Erro ao atualizar tudo:',e);
-    if(btn) btn.textContent='↻ Tentar novamente';
-    showToastAdmin('Não foi possível atualizar tudo.');
-  }finally{
-    setTimeout(()=>{ if(btn){ btn.disabled=false; btn.textContent='↻ Atualizar'; } },1500);
-  }
+  const url=window.location.href.split('#')[0];
+  const separador=url.includes('?')?'&':'?';
+  window.location.href=url+separador+'refresh='+Date.now();
 }
 
 function atualizarMensagensAdminAgora(btn){
@@ -1233,6 +1337,248 @@ function showToastAdmin(texto){
 }
 
 
+async function carregarHorariosRemarcacaoAdmin(data, id){
+  const status = await Promise.race([chamarRPC('obter_status_barbearia_data',{p_data:data}), new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado ao consultar o dia.')),8000))]);
+  const st = Array.isArray(status) ? status[0] : status;
+  const aviso = document.getElementById('remarcacaoAviso');
+  const select = document.getElementById('remarcacaoHora');
+  if(!select) return;
+
+  if(!st || !st.aberta){
+    select.disabled=false;
+    select.innerHTML='<option value="">Nenhum horário — barbearia fechada neste dia</option>';
+    if(aviso) aviso.textContent=(st && st.motivo) ? '🔴 '+st.motivo : '🔴 A barbearia está fechada neste dia.';
+    return;
+  }
+
+  if(aviso) aviso.textContent='🟢 '+(st.excepcional ? 'Dia aberto excepcionalmente. ' : '')+'Escolha um horário disponível.';
+
+  let ocupados=new Set();
+  try{
+    const rows=await Promise.race([chamarRPC('listar_horarios_ocupados',{p_data:data}), new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado ao consultar horários.')),8000))]);
+    (rows||[]).forEach(item=>{
+      const h=item.horario || item;
+      if(h) ocupados.add(String(h).slice(0,5));
+    });
+  }catch(e){
+    console.error(e);
+  }
+
+  // O próprio horário atual do cliente não deve bloquear a remarcação.
+  const ag = window.__remarcacaoAgendamentoAtual;
+  if(ag && ag.data_hora){
+    const atual = new Date(ag.data_hora);
+    const atualData = isNaN(atual.getTime()) ? '' :
+      new Date(atual.getTime()-atual.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    if(atualData===data){
+      const atualHora=String(new Date(atual.getTime()).toTimeString().slice(0,5));
+      ocupados.delete(atualHora);
+    }
+  }
+
+  const hoje=hojeLocal();
+  const agora=new Date();
+  const agoraMin=agora.getHours()*60+agora.getMinutes();
+  const dia=new Date(data+'T12:00:00').getDay();
+
+  // Horário normal: terça a sexta 09:00–20:30; sábado 09:00–23:00.
+  // Domingo/segunda só aparecem se estiverem excepcionalmente abertos.
+  let inicio=9*60, fim=20*60+30;
+  if(dia===6) fim=23*60;
+
+  const horarios=[];
+  for(let m=inicio;m<=fim;m+=30){
+    if(m>11*60+30 && m<14*60) continue;
+    const hh=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+    const passado=(data===hoje && m<=agoraMin);
+    const ocupado=ocupados.has(hh);
+    if(!ocupado && !passado) horarios.push(hh);
+  }
+
+  select.disabled=false;
+  select.innerHTML=horarios.length
+    ? '<option value="">Selecione um horário disponível</option>'+horarios.map(h=>'<option value="'+h+'">'+h+'</option>').join('')
+    : '<option value="">Nenhum horário disponível neste dia</option>';
+
+  if(aviso && !horarios.length) aviso.textContent='⚠️ Não há horários disponíveis neste dia.';
+}
+
+window.remarcarAgendamentoAdmin = function(id){
+  const ag=(window.__agendaAdminRows||[]).find(x=>String(x.id)===String(id));
+  window.__remarcacaoAgendamentoAtual=ag||null;
+
+  const modal=document.createElement('div');
+  modal.id='modalRemarcacaoAdmin';
+  modal.setAttribute('role','dialog');
+  modal.setAttribute('aria-modal','true');
+  modal.style.cssText='position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;background:rgba(0,0,0,.84)!important;z-index:200000!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:16px!important;box-sizing:border-box!important;pointer-events:auto!important;touch-action:auto!important;';
+  modal.innerHTML=`
+    <div id="remarcacaoCaixaAdmin" style="width:min(520px,100%);max-height:92dvh;overflow:auto;-webkit-overflow-scrolling:touch;background:#171a1f;border:1px solid #3a3f46;border-radius:22px;padding:20px;box-sizing:border-box;color:#fff;position:relative;z-index:200001!important;pointer-events:auto!important;">
+      <div style="font-size:24px;font-weight:900;margin-bottom:8px">🔄 Remarcar agendamento</div>
+      <div style="font-weight:800;margin-bottom:16px">${escapeHtml(ag?.cliente_nome||'Cliente')} ${ag?.data_hora?'• horário atual: '+escapeHtml(formatarDataHora(ag.data_hora)):''}</div>
+      <label for="remarcacaoData" style="display:block;font-weight:900;margin-bottom:6px">📅 Nova data</label>
+      <input id="remarcacaoData" type="date" min="${hojeLocal()}" style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border-radius:12px;border:1px solid #555;background:#0f1115;color:#fff;">
+      <div id="remarcacaoDia" style="font-weight:800;margin-top:8px;opacity:.9"></div>
+      <div id="remarcacaoAviso" style="margin-top:10px;font-weight:800;min-height:24px"></div>
+      <label for="remarcacaoHora" style="display:block;font-weight:900;margin:18px 0 6px">🕐 Horário disponível</label>
+      <select id="remarcacaoHora" disabled style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border-radius:12px;border:1px solid #555;background:#0f1115;color:#fff;">
+        <option value="">Escolha uma data</option>
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px">
+        <button type="button" class="btn" id="btnFecharRemarcacao" style="min-height:54px;position:relative;z-index:200002;pointer-events:auto;touch-action:manipulation">Cancelar</button>
+        <button type="button" class="btn primary" id="btnConfirmarRemarcacao" disabled style="min-height:54px;position:relative;z-index:200002;pointer-events:auto;touch-action:manipulation">🔄 Confirmar remarcação</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const dataEl=modal.querySelector('#remarcacaoData');
+  const horaEl=modal.querySelector('#remarcacaoHora');
+  const diaEl=modal.querySelector('#remarcacaoDia');
+  const avisoEl=modal.querySelector('#remarcacaoAviso');
+  const fecharBtn=modal.querySelector('#btnFecharRemarcacao');
+  const confirmarBtn=modal.querySelector('#btnConfirmarRemarcacao');
+
+  // Fechar nunca depende de consulta ao Supabase.
+  const fecharModal=()=>{
+    if(modal.parentNode) modal.parentNode.removeChild(modal);
+    window.__remarcacaoAgendamentoAtual=null;
+  };
+  fecharBtn.onclick=(e)=>{e.preventDefault();e.stopPropagation();fecharModal();};
+  modal.onclick=(e)=>{if(e.target===modal) fecharModal();};
+
+  async function carregarData(){
+    const data=dataEl.value;
+    confirmarBtn.disabled=true;
+    if(!data){
+      diaEl.textContent='';
+      avisoEl.textContent='Escolha uma data.';
+      horaEl.disabled=true;
+      horaEl.innerHTML='<option value="">Escolha uma data</option>';
+      return;
+    }
+    diaEl.textContent='📆 '+nomeDiaAdmin(data);
+    horaEl.disabled=true;
+    horaEl.innerHTML='<option value="">⏳ Consultando disponibilidade...</option>';
+    avisoEl.textContent='';
+    try{
+      const status=await Promise.race([
+        chamarRPC('obter_status_barbearia_data',{p_data:data}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('A consulta do dia demorou demais.')),6000))
+      ]);
+      if(!document.body.contains(modal)) return;
+      const st=Array.isArray(status)?status[0]:status;
+      if(!st || !st.aberta){
+        horaEl.disabled=true;
+        horaEl.innerHTML='<option value="">Nenhum horário — barbearia fechada neste dia</option>';
+        avisoEl.textContent='🔴 '+((st&&st.motivo)||'A barbearia está fechada neste dia.');
+        return;
+      }
+
+      let ocupados=new Set();
+      try{
+        const rows=await Promise.race([
+          chamarRPC('listar_horarios_ocupados',{p_data:data}),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('Consulta de horários demorou demais.')),6000))
+        ]);
+        (Array.isArray(rows)?rows:[]).forEach(item=>{
+          const h=item && (item.horario??item);
+          if(h) ocupados.add(String(h).slice(0,5));
+        });
+      }catch(e){
+        console.warn('Não foi possível consultar ocupados; exibindo a grade e validando no confirmar.',e);
+        avisoEl.textContent='🟡 Horários básicos carregados. A disponibilidade será confirmada ao salvar.';
+      }
+
+      // Libera o próprio horário atual para que o cliente possa permanecer no mesmo dia.
+      if(ag?.data_hora){
+        const atual=new Date(ag.data_hora);
+        if(!Number.isNaN(atual.getTime())){
+          const isoLocal=new Date(atual.getTime()-atual.getTimezoneOffset()*60000).toISOString().slice(0,10);
+          if(isoLocal===data) ocupados.delete(atual.toTimeString().slice(0,5));
+        }
+      }
+
+      const hoje=hojeLocal();
+      const agora=new Date();
+      const agoraMin=agora.getHours()*60+agora.getMinutes();
+      const dia=diaSemanaAdmin(data);
+      let inicio=9*60;
+      let fim=(dia===6?23*60:20*60+30);
+      const horarios=[];
+      for(let m=inicio;m<=fim;m+=30){
+        if(m>11*60+30 && m<14*60) continue;
+        const hh=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+        const passado=(data===hoje && m<=agoraMin);
+        if(!ocupados.has(hh) && !passado) horarios.push(hh);
+      }
+
+      horaEl.innerHTML=horarios.length
+        ? '<option value="">Selecione um horário disponível</option>'+horarios.map(h=>'<option value="'+h+'">'+h+'</option>').join('')
+        : '<option value="">Nenhum horário disponível neste dia</option>';
+      horaEl.disabled=!horarios.length;
+      confirmarBtn.disabled=true;
+      avisoEl.textContent=horarios.length ? '🟢 Escolha um horário disponível.' : '⚠️ Não há horários disponíveis neste dia.';
+    }catch(e){
+      console.error('Erro ao carregar remarcação:',e);
+      horaEl.disabled=true;
+      horaEl.innerHTML='<option value="">Não foi possível consultar este dia</option>';
+      avisoEl.textContent='⚠️ '+(e.message||'Não foi possível consultar a disponibilidade.')+' Você ainda pode escolher outra data.';
+    }
+  }
+
+  horaEl.addEventListener('change',()=>{confirmarBtn.disabled=!horaEl.value;});
+  dataEl.addEventListener('change',carregarData);
+
+  confirmarBtn.onclick=async(e)=>{
+    e.preventDefault();e.stopPropagation();
+    const data=dataEl.value,hora=horaEl.value;
+    if(!data||!hora) return;
+    if(!window.confirm('Remarcar para '+new Date(data+'T12:00:00').toLocaleDateString('pt-BR')+' às '+hora+'?')) return;
+    confirmarBtn.disabled=true;
+    fecharBtn.disabled=true;
+    confirmarBtn.textContent='⏳ Remarcando...';
+    try{
+      const ok=await chamarRPC('remarcar_agendamento_admin',{p_id:id,p_nova_data_hora:data+'T'+hora+':00'});
+      if(ok!==true) throw new Error('Esse horário não está mais disponível.');
+      fecharModal();
+      mostrarMensagem('Agendamento remarcado com sucesso. O cliente foi notificado.','success');
+      await carregarAgenda();
+    }catch(e){
+      console.error('Erro ao confirmar remarcação:',e);
+      fecharBtn.disabled=false;
+      confirmarBtn.disabled=false;
+      confirmarBtn.textContent='🔄 Confirmar remarcação';
+      avisoEl.textContent='❌ '+(e.message||'Não foi possível remarcar o agendamento.');
+    }
+  };
+
+  // A janela abre funcional mesmo se o Supabase estiver lento.
+  const hoje=hojeLocal();
+  let dataInicial=hoje;
+  if(ag?.data_hora){
+    const d=new Date(ag.data_hora);
+    if(!Number.isNaN(d.getTime())){
+      const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+      if(local>=hoje) dataInicial=local;
+    }
+  }
+  dataEl.value=dataInicial;
+  carregarData();
+};
+
+function diaSemanaAdmin(data){
+  if(!data) return null;
+  const p=String(data).split('-').map(Number);
+  if(p.length!==3 || p.some(Number.isNaN)) return null;
+  return new Date(p[0],p[1]-1,p[2]).getDay();
+}
+
+function nomeDiaAdmin(data){
+  const d=diaSemanaAdmin(data);
+  return ({0:'domingo',1:'segunda-feira',2:'terça-feira',3:'quarta-feira',4:'quinta-feira',5:'sexta-feira',6:'sábado'})[d] || '';
+}
+
+
 async function alterarStatus(id,status){
   if(status==='cancelado' && !confirm('Cancelar este agendamento?')) return;
   try{
@@ -1263,6 +1609,92 @@ function diaSemanaAdmin(data){
 function nomeDiaAdmin(data){
   const d=diaSemanaAdmin(data);
   return ({0:'domingo',1:'segunda-feira',2:'terça-feira',3:'quarta-feira',4:'quinta-feira',5:'sexta-feira',6:'sábado'})[d] || '';
+}
+
+let calendarioFechamentosAdminMes = null;
+let calendarioFechamentosAdminExcecoes = {};
+let calendarioFechamentosAdminRenderToken = 0;
+
+function formatarMesAdminCalendario(data){
+  return new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(data.getFullYear(),data.getMonth(),1));
+}
+
+function chaveDataCalendarioAdmin(y,m,d){
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+async function carregarCalendarioFechamentosAdmin(){
+  const meuToken=++calendarioFechamentosAdminRenderToken;
+  const grid=document.getElementById('calFechGrid');
+  const titulo=document.getElementById('calFechTitulo');
+  if(!grid || !titulo) return;
+  if(!calendarioFechamentosAdminMes) {
+    const hoje=new Date();
+    calendarioFechamentosAdminMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  }
+  const y=calendarioFechamentosAdminMes.getFullYear();
+  const m=calendarioFechamentosAdminMes.getMonth();
+  titulo.textContent=formatarMesAdminCalendario(calendarioFechamentosAdminMes);
+  grid.innerHTML='<div style="grid-column:1/-1;padding:10px">⏳ Carregando...</div>';
+  try{
+    const inicio=chaveDataCalendarioAdmin(y,m,1);
+    const ultimo=new Date(y,m+1,0).getDate();
+    const fim=chaveDataCalendarioAdmin(y,m,ultimo);
+    const resultado=await chamarRPC('listar_excecoes_funcionamento',{p_inicio:inicio,p_fim:fim});
+    if(meuToken!==calendarioFechamentosAdminRenderToken) return;
+    calendarioFechamentosAdminExcecoes={};
+    (Array.isArray(resultado)?resultado:[]).forEach(x=>{
+      calendarioFechamentosAdminExcecoes[String(x.data).slice(0,10)]=x;
+    });
+    const diasSemana=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+    const partes=diasSemana.map(d=>`<div style="font-size:11px;font-weight:900;padding:4px;color:var(--muted)">${d}</div>`);
+    const primeiro=new Date(y,m,1).getDay();
+    for(let i=0;i<primeiro;i++) partes.push('<div></div>');
+    for(let d=1;d<=ultimo;d++){
+      const data=chaveDataCalendarioAdmin(y,m,d);
+      const dow=new Date(y,m,d).getDay();
+      const exc=calendarioFechamentosAdminExcecoes[data];
+      const fechadoExcepcional=!!exc && exc.aberta===false;
+      const fechadoPadrao=(dow===0 || dow===1) && !exc;
+      const selecionado=document.getElementById('excecaoDataAdmin')?.value===data;
+      let bg='var(--panel)';
+      let color='inherit';
+      let border='1px solid var(--line)';
+      let texto=String(d);
+      if(fechadoExcepcional){ bg='#5b1720'; color='#fff'; border='2px solid #ff5b6e'; texto+=' 🔴'; }
+      else if(exc && exc.aberta===true){ bg='#173d24'; color='#fff'; border='2px solid #55d17a'; texto+=' 🟢'; }
+      else if(fechadoPadrao){ bg='rgba(255,255,255,.04)'; color='var(--muted)'; texto+=' ⚪'; }
+      if(selecionado) border='3px solid var(--gold)';
+      const tituloDia=fechadoExcepcional ? `Fechado: ${exc.motivo||'Fechamento excepcional'}` : (exc?.aberta===true ? `Aberto excepcionalmente: ${exc.motivo||''}` : (fechadoPadrao ? 'Fechado por padrão' : 'Aberto normalmente'));
+      partes.push(`<button type="button" title="${escapeHtml(tituloDia)}" onclick="selecionarDiaCalendarioAdmin('${data}')" style="min-height:48px;border:${border};border-radius:10px;background:${bg};color:${color};font-weight:900;font-size:12px;padding:3px;cursor:pointer">${texto}</button>`);
+    }
+    grid.innerHTML=partes.join('');
+  }catch(e){
+    if(meuToken!==calendarioFechamentosAdminRenderToken) return;
+    console.error(e);
+    grid.innerHTML='<div style="grid-column:1/-1;padding:10px;color:#ff7b7b;font-weight:800">Não foi possível carregar os dias fechados.</div>';
+  }
+}
+
+async function selecionarDiaCalendarioAdmin(data){
+  const input=document.getElementById('excecaoDataAdmin');
+  if(!input) return;
+  input.value=data;
+  const p=String(data).split('-').map(Number);
+  if(p.length===3 && p.every(Number.isFinite)){
+    calendarioFechamentosAdminMes=new Date(p[0],p[1]-1,1);
+  }
+  await carregarStatusExcecaoAdmin();
+  await carregarCalendarioFechamentosAdmin();
+}
+
+function mudarMesFechamentosAdmin(delta){
+  if(!calendarioFechamentosAdminMes){
+    const hoje=new Date();
+    calendarioFechamentosAdminMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  }
+  calendarioFechamentosAdminMes=new Date(calendarioFechamentosAdminMes.getFullYear(),calendarioFechamentosAdminMes.getMonth()+delta,1);
+  carregarCalendarioFechamentosAdmin();
 }
 
 async function carregarStatusExcecaoAdmin(){
@@ -1320,7 +1752,10 @@ async function salvarExcecaoFuncionamentoAdmin(aberta,motivo){
     const resultado=await chamarRPC('definir_excecao_funcionamento',{p_data:data,p_aberta:aberta,p_motivo:motivo||null});
     if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou a alteração.');
     if(msg) msg.innerHTML='<div class="success">✓ Alteração salva para '+nomeDiaAdmin(data)+'.</div>';
+    // Se a data alterada é hoje, atualiza imediatamente o controle principal, sem recarregar a página.
+    if(data===dataHojeAdmin()) await carregarStatusBarbearia();
     await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
     return true;
   }catch(e){
     console.error(e);
@@ -1386,10 +1821,12 @@ async function restaurarPadraoDiaAdmin(){
     if(resultado!==true && resultado!=='true') throw new Error('Não foi possível restaurar o padrão.');
     if(msg) msg.innerHTML='<div class="success">✓ Funcionamento padrão restaurado.</div>';
     await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
   }catch(e){
     console.error(e);
     if(msg) msg.innerHTML='<div class="error">Não foi possível restaurar o padrão.</div>';
     await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
   }
 }
 
@@ -1398,8 +1835,21 @@ function iniciarControleExcecaoAdmin(){
   if(!input) return;
   input.value=hojeLocal();
   input.min=dataHojeAdmin();
-  input.addEventListener('change',carregarStatusExcecaoAdmin);
+  input.addEventListener('change',async()=>{
+    const valor=String(input.value||'');
+    const p=valor.split('-').map(Number);
+    if(p.length===3 && p.every(Number.isFinite)){
+      calendarioFechamentosAdminMes=new Date(p[0],p[1]-1,1);
+    }
+    // Aguarda as duas atualizações para evitar uma renderização antiga
+    // do calendário sobrescrever a data escolhida.
+    await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
+  });
   carregarStatusExcecaoAdmin();
+  const p=String(input.value).split('-').map(Number);
+  if(p.length===3 && p.every(Number.isFinite)) calendarioFechamentosAdminMes=new Date(p[0],p[1]-1,1);
+  carregarCalendarioFechamentosAdmin();
 }
 
 function dataHojeAdmin(){
@@ -1489,11 +1939,16 @@ async function alternarStatusBarbearia(){
         if(data!==true) throw new Error('Não foi possível abrir este dia.');
         mostrarMensagem('Hoje foi aberto excepcionalmente para os clientes.','success');
       }
-      await carregarStatusBarbearia();
-      await new Promise(r=>setTimeout(r,100));
+      // Sincroniza o controle principal e a seção de exceções imediatamente.
       await carregarStatusBarbearia();
       const input=document.getElementById('excecaoDataAdmin');
       if(input && input.value===hoje) await carregarStatusExcecaoAdmin();
+      // Se a agenda estiver aberta, atualiza imediatamente os horários liberados/bloqueados.
+      const agendaView=document.getElementById('viewAgenda');
+      if(agendaView && agendaView.classList.contains('active')){
+        const dataAgenda=document.getElementById('data');
+        if(dataAgenda && dataAgenda.value===hoje) await carregarAgenda();
+      }
     }catch(e){
       console.error(e);
       mostrarMensagem(e.message||'Não foi possível alterar o status de hoje.','error');
@@ -1513,6 +1968,8 @@ async function alternarStatusBarbearia(){
       if(data!==true) throw new Error('Não foi possível fechar a barbearia.');
       mostrarMensagem('Barbearia fechada para os clientes.','success');
       await carregarStatusBarbearia();
+      const agendaView=document.getElementById('viewAgenda');
+      if(agendaView && agendaView.classList.contains('active')) await carregarAgenda();
     }catch(e){ console.error(e); mostrarMensagem('Não foi possível fechar a barbearia.','error'); }
     finally{ botao.disabled=false; }
   }else{
@@ -1523,6 +1980,8 @@ async function alternarStatusBarbearia(){
       if(data!==true) throw new Error('Não foi possível abrir a barbearia.');
       mostrarMensagem('Barbearia aberta para os clientes.','success');
       await carregarStatusBarbearia();
+      const agendaView=document.getElementById('viewAgenda');
+      if(agendaView && agendaView.classList.contains('active')) await carregarAgenda();
     }catch(e){ console.error(e); mostrarMensagem('Não foi possível abrir a barbearia.','error'); }
     finally{ botao.disabled=false; }
   }
@@ -1537,8 +1996,7 @@ async function carregarServicosAdmin(){
   SERVICOS_ADMIN_CACHE=Array.isArray(rows)?rows:[];
   PRECOS_SERVICOS_ADMIN={};
   SERVICOS_ADMIN_CACHE.forEach(s=>{ PRECOS_SERVICOS_ADMIN[normalizarNomeServicoAdmin(s.nome)]=Number(s.preco||0); });
-  const select=document.getElementById('adminAgServico');
-  if(select){
+  const select=document.getElementById('adminAgServico');  if(select){
     select.innerHTML='<option value="">Selecione o serviço</option>'+SERVICOS_ADMIN_CACHE.map(s=>'<option value="'+escapeHtml(s.nome)+'">'+escapeHtml(s.nome)+' — '+formatarPrecoAdmin(s.preco)+'</option>').join('');
   }
   return SERVICOS_ADMIN_CACHE;
@@ -1644,7 +2102,69 @@ function validarDataAgendamentoAdmin(){
   return true;
 }
 
-function mostrarTelaAdmin(tela){
+async function carregarNotificacoesAdmin(){
+  const lista=document.getElementById('listaNotificacoesAdmin');
+  if(!lista) return;
+  lista.innerHTML='<div class="card empty">Carregando notificações...</div>';
+  try{
+    const rows=await chamarRPC('listar_notificacoes_admin',{p_limite:50});
+    const itens=Array.isArray(rows)?rows:[];
+    if(!itens.length){
+      lista.innerHTML='<div class="card empty">Nenhuma notificação nova.</div>';
+      atualizarBadgeNotificacoesAdmin(0);
+      return;
+    }
+    const cards=await Promise.all(itens.map(async n=>{
+      let caminhoFoto=n.foto_url||'';
+      if(!caminhoFoto && n.cliente_telefone && typeof buscarFotoPorTelefoneAdmin==='function'){
+        caminhoFoto=await buscarFotoPorTelefoneAdmin(n.cliente_telefone);
+      }
+      const foto=await criarUrlFotoAdmin(caminhoFoto);
+      const nome=n.cliente_nome||'Cliente';
+      const avatar=foto
+        ? '<img src=\"'+escapeHtml(foto)+'\" alt=\"Foto de '+escapeHtml(nome)+'\" style=\"width:58px;height:58px;border-radius:50%;object-fit:cover;flex:0 0 58px;border:2px solid var(--line)\">'
+        : '<div style=\"width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:2px solid var(--line);font-size:26px;flex:0 0 58px\">👤</div>';
+      const data=n.criado_em?new Date(n.criado_em).toLocaleString('pt-BR'):'Agora';
+      return '<div class=\"notificacao-card nova\" style=\"display:flex;gap:12px;align-items:center;\">'+avatar+'<div style=\"min-width:0;flex:1;\"><div style=\"font-weight:900;\">'+escapeHtml(n.mensagem||'Nova notificação')+'</div><div style=\"font-weight:800;margin-top:4px;\">'+escapeHtml(nome)+'</div><div class=\"notificacao-meta\">'+escapeHtml(data)+'</div></div></div>';
+    }));
+    lista.innerHTML=cards.join('');
+    atualizarBadgeNotificacoesAdmin(itens.filter(n=>n.status==='pendente').length);
+  }catch(e){
+    console.error(e);
+    lista.innerHTML='<div class="error">Não foi possível carregar as notificações.</div>';
+  }
+}
+
+function atualizarBadgeNotificacoesAdmin(total){
+  const badge=document.getElementById('notificacaoBadgeAdmin');
+  if(!badge) return;
+  const n=Number(total)||0;
+  badge.textContent=n>99?'99+':String(n);
+  badge.style.display=n?'flex':'none';
+}
+
+async function atualizarNotificacoesAdminSilencioso(){
+  if(!ADMIN_AUTH_READY) return;
+  try{
+    const rows=await chamarRPC('listar_notificacoes_admin',{p_limite:50});
+    const itens=Array.isArray(rows)?rows:[];
+    atualizarBadgeNotificacoesAdmin(itens.filter(n=>n.status==='pendente').length);
+  }catch(e){ console.error('Notificações:',e); }
+}
+
+function abrirNotificacoesDireto(){
+  const alvo=document.getElementById('viewNotificacoes');
+  if(alvo){
+    alvo.classList.add('notificacoes-fullscreen');
+    document.body.classList.add('notificacoes-abertas');
+  }
+  mostrarTelaAdmin('notificacoes');
+  if(alvo){
+    setTimeout(()=>alvo.scrollTo({top:0,behavior:'instant'}),30);
+  }
+}
+
+function abrirTelaAdminCheia(tela){
   const views={
     agenda:document.getElementById('viewAgenda'),
     financeiro:document.getElementById('viewFinanceiro'),
@@ -1653,14 +2173,51 @@ function mostrarTelaAdmin(tela){
     conta:document.getElementById('viewConta'),
     precos:document.getElementById('viewPrecos')
   };
+  const alvo=views[tela];
+  if(!alvo) return;
+  Object.values(views).forEach(v=>v&&v.classList.remove('admin-fullscreen'));
+  alvo.classList.add('admin-fullscreen');
+  document.body.classList.add('admin-tela-cheia-aberta');
+  mostrarTelaAdmin(tela);
+  setTimeout(()=>alvo.scrollTo({top:0,behavior:'instant'}),30);
+}
+
+function mostrarTelaAdmin(tela){
+  const adminViewsCheias=['viewAgenda','viewFinanceiro','viewMensagens','viewAgendar','viewConta','viewPrecos'];
+  adminViewsCheias.forEach(id=>{ const v=document.getElementById(id); if(v && tela!=='agenda' && id==='viewAgenda'){} });
+  const todasViewsCheias=adminViewsCheias.map(id=>document.getElementById(id)).filter(Boolean);
+  if(tela==='menu'){ todasViewsCheias.forEach(v=>v.classList.remove('admin-fullscreen')); document.body.classList.remove('admin-tela-cheia-aberta'); }
+  const notificacoesView=document.getElementById('viewNotificacoes');
+  if(tela!=='notificacoes' && notificacoesView){
+    notificacoesView.classList.remove('notificacoes-fullscreen');
+    document.body.classList.remove('notificacoes-abertas');
+  }
+  const views={
+    agenda:document.getElementById('viewAgenda'),
+    financeiro:document.getElementById('viewFinanceiro'),
+    mensagens:document.getElementById('viewMensagens'),
+    agendar:document.getElementById('viewAgendar'),
+    conta:document.getElementById('viewConta'),
+    precos:document.getElementById('viewPrecos'),
+    notificacoes:document.getElementById('viewNotificacoes')
+  };
   Object.values(views).forEach(v=>v&&v.classList.remove('active'));
   if(tela==='menu') return;
   if(views[tela]) views[tela].classList.add('active');
+  if(tela==='agenda'){
+    const dataAgenda=document.getElementById('data');
+    const hoje=hojeLocal();
+    if(dataAgenda && (!dataAgenda.value || dataAgenda.value < hoje)) dataAgenda.value=hoje;
+    carregarAgenda().catch(e=>console.error('Erro ao carregar agenda:',e));
+  }
   if(tela==='conta'){
     carregarDadosContaAdmin();
   }
   if(tela==='precos'){
     carregarPrecosAdmin();
+  }
+  if(tela==='notificacoes'){
+    carregarNotificacoesAdmin();
   }
   if(tela==='agendar'){
     carregarServicosAdmin().catch(e=>console.error('Erro ao carregar serviços:',e));
@@ -1689,7 +2246,7 @@ async function atualizarHorariosAdmin(){
   // Horários já ocupados no Supabase para a data escolhida.
   let ocupados=new Set();
   try{
-    const rows=await chamarRPC('listar_horarios_ocupados',{p_data:data});
+    const rows=await Promise.race([chamarRPC('listar_horarios_ocupados',{p_data:data}), new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado ao consultar horários.')),8000))]);
     (rows||[]).forEach(item=>{
       const h=item.horario || item;
       if(h) ocupados.add(String(h).slice(0,5));
@@ -1809,6 +2366,80 @@ document.addEventListener('DOMContentLoaded', async function(){
   if (typeof window.mostrarTelaAdmin === 'function') window.mostrarTelaAdmin('menu');
   await iniciarSegurancaAdmin();
 });
+</script>
+<script>
+(function(){
+  // Ao escolher outro dia, carrega imediatamente a agenda daquele dia.
+  // O usuário não precisa tocar em 'Ver agenda'.
+  const configurarTrocaDeData = () => {
+    const data = document.getElementById('data');
+    if(!data || data.dataset.autoAgendaChange === '1') return;
+    data.dataset.autoAgendaChange = '1';
+    data.addEventListener('change', function(){
+      if(typeof carregarAgenda === 'function') carregarAgenda().catch(e=>console.error('Erro ao carregar agenda pela data:', e));
+    });
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', configurarTrocaDeData);
+  else configurarTrocaDeData();
+})();
+</script>
+<!-- Atualização automática de 10 segundos removida. A agenda agora carrega ao trocar a data e ao abrir a tela. -->
+<script>
+(function(){
+let mesAgendaAdmin=new Date(); mesAgendaAdmin.setDate(1);
+const nomes=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function pad(n){return String(n).padStart(2,'0')}
+function dataLocal(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d)}
+window.mudarMesAgendaAdmin=function(delta){mesAgendaAdmin.setMonth(mesAgendaAdmin.getMonth()+delta); carregarCalendarioAgendaAdmin();}
+window.carregarCalendarioAgendaAdmin=async function(){
+ const box=document.getElementById('calendarioAgendaAdmin'), titulo=document.getElementById('tituloMesAgendaAdmin'); if(!box||!titulo)return;
+ const y=mesAgendaAdmin.getFullYear(), m=mesAgendaAdmin.getMonth(); titulo.textContent=meses[m]+' de '+y; box.innerHTML='';
+ nomes.forEach(n=>{const h=document.createElement('div');h.textContent=n;h.style.cssText='text-align:center;color:var(--muted);font-weight:800;font-size:11px;padding:4px 0';box.appendChild(h)});
+ const inicio=new Date(y,m,1).getDay(), total=new Date(y,m+1,0).getDate();
+ for(let i=0;i<inicio;i++) box.appendChild(document.createElement('div'));
+ const botoes={};
+ for(let d=1;d<=total;d++){
+   const iso=dataLocal(y,m,d), dow=new Date(y,m,d).getDay();
+   const b=document.createElement('button'); b.type='button'; b.textContent=d;
+   b.style.cssText='min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-weight:900;font-size:15px;position:relative;cursor:pointer;';
+   if(dow===0||dow===1){b.style.opacity='.45';}
+   b.title='Abrir agenda de '+iso;
+   b.onclick=()=>{const input=document.getElementById('data'); if(input){input.value=iso; input.dispatchEvent(new Event('change',{bubbles:true}));} else {carregarAgenda();} carregarAgenda().catch(console.error);};
+   box.appendChild(b); botoes[iso]=b;
+ }
+ try{
+   // Consulta todos os dias do mês para marcar corretamente os dias que possuem agendamentos.
+   const datas=Array.from({length:total},(_,i)=>dataLocal(y,m,i+1));
+   const resultados=await Promise.all(datas.map(async iso=>{
+     try{ return [iso, await chamarRPC('listar_agenda_admin_foto',{p_data:iso})]; }
+     catch(e){ console.warn('Agenda do dia '+iso,e); return [iso,[]]; }
+   }));
+   resultados.forEach(([iso,rows])=>{
+     const b=botoes[iso]; if(!b)return;
+     const ativos=(Array.isArray(rows)?rows:[]).filter(x=>x && !['cancelado','faltou'].includes(String(x.status||'').toLowerCase()));
+     const todos=(Array.isArray(rows)?rows:[]).length;
+     if(ativos.length){
+       b.style.borderColor='var(--gold)'; b.style.boxShadow='inset 0 -4px 0 var(--gold)'; b.title='📅 '+ativos.length+' agendamento(s) em '+iso;
+       b.innerHTML=datas ? '<span>'+iso.slice(8).replace(/^0/,'')+'</span><span style="display:block;font-size:11px;color:var(--gold);margin-top:2px">● '+ativos.length+'</span>' : b.textContent;
+     } else if(todos){
+       b.style.borderColor='var(--muted)'; b.title='Histórico em '+iso+' ('+todos+' registro(s))';
+     }
+   });
+   // Dias fechados: exceções e domingo/segunda continuam visíveis no calendário.
+   try{
+     const ex=await chamarRPC('listar_excecoes_funcionamento',{p_inicio:dataLocal(y,m,1),p_fim:dataLocal(y,m,total)});
+     (Array.isArray(ex)?ex:[]).forEach(x=>{
+       const iso=String(x.data).slice(0,10), b=botoes[iso]; if(!b)return;
+       if(x.aberta===false){b.style.borderColor='#ef4444'; b.style.boxShadow='inset 0 -4px 0 #ef4444'; b.title='🔴 Fechado excepcionalmente — '+iso;}
+       else if(x.aberta===true){b.style.borderColor='#22c55e'; b.style.boxShadow='inset 0 -4px 0 #22c55e'; b.title='🟢 Aberto excepcionalmente — '+iso;}
+     });
+   }catch(e){console.warn('Exceções no calendário da agenda:',e);}
+ }catch(e){console.warn('Calendário da agenda:',e);}
+};
+document.addEventListener('DOMContentLoaded',()=>{setTimeout(carregarCalendarioAgendaAdmin,300);});
+})();
+</script>
 </script>
 </body>
 </html>
