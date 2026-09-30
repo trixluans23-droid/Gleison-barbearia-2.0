@@ -234,6 +234,13 @@ body.notificacoes-abertas{overflow:hidden!important;}
 }
 body.admin-tela-cheia-aberta{overflow:hidden!important;}
 </style>
+
+<style>
+/* Resumo do dia: cards interativos no celular */
+.resumo-dia-card{width:100%;font:inherit;color:var(--text);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;text-align:center}
+.resumo-dia-card:active{transform:scale(.98)}
+.resumo-dia-card:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+</style>
 </head>
 <body>
 <div id="adminLogin">
@@ -306,11 +313,11 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div class="card resumo-dia-admin" id="resumoDiaAdmin">
   <div class="resumo-dia-titulo">📊 Resumo de hoje</div>
   <div class="resumo-dia-grid">
-    <div class="resumo-dia-card"><div class="resumo-dia-icone">📅</div><div class="resumo-dia-label">Agendamentos</div><div class="resumo-dia-valor" id="resumoDiaAgendamentos">—</div></div>
-    <div class="resumo-dia-card"><div class="resumo-dia-icone">✂️</div><div class="resumo-dia-label">Atendidos</div><div class="resumo-dia-valor" id="resumoDiaAtendidos">—</div></div>
-    <div class="resumo-dia-card"><div class="resumo-dia-icone">⏳</div><div class="resumo-dia-label">Pendentes</div><div class="resumo-dia-valor" id="resumoDiaPendentes">—</div></div>
-    <div class="resumo-dia-card"><div class="resumo-dia-icone">❌</div><div class="resumo-dia-label">Cancelados</div><div class="resumo-dia-valor" id="resumoDiaCancelados">—</div></div>
-    <div class="resumo-dia-card" style="grid-column:1/-1"><div class="resumo-dia-icone">💰</div><div class="resumo-dia-label">Faturamento do dia</div><div class="resumo-dia-valor" id="resumoDiaFaturamento">R$ 0,00</div></div>
+    <button class="resumo-dia-card" type="button" data-resumo-acao="agendamentos"><div class="resumo-dia-icone">📅</div><div class="resumo-dia-label">Agendamentos</div><div class="resumo-dia-valor" id="resumoDiaAgendamentos">—</div></button>
+    <button class="resumo-dia-card" type="button" data-resumo-acao="atendidos"><div class="resumo-dia-icone">✂️</div><div class="resumo-dia-label">Atendidos</div><div class="resumo-dia-valor" id="resumoDiaAtendidos">—</div></button>
+    <button class="resumo-dia-card" type="button" data-resumo-acao="pendentes"><div class="resumo-dia-icone">⏳</div><div class="resumo-dia-label">Pendentes</div><div class="resumo-dia-valor" id="resumoDiaPendentes">—</div></button>
+    <button class="resumo-dia-card" type="button" data-resumo-acao="cancelados"><div class="resumo-dia-icone">❌</div><div class="resumo-dia-label">Cancelados</div><div class="resumo-dia-valor" id="resumoDiaCancelados">—</div></button>
+    <button class="resumo-dia-card" type="button" data-resumo-acao="faturamento" style="grid-column:1/-1"><div class="resumo-dia-icone">💰</div><div class="resumo-dia-label">Faturamento do dia</div><div class="resumo-dia-valor" id="resumoDiaFaturamento">R$ 0,00</div></button>
   </div>
   <div class="resumo-dia-atualizado" id="resumoDiaAtualizado">Carregando resumo...</div>
 </div>
@@ -2518,6 +2525,27 @@ document.addEventListener('DOMContentLoaded', function(){
         window.mostrarTelaAdmin(tela);
       }
     }, {passive:false});
+  });
+});
+</script>
+
+<script>
+// Resumo do dia: cada card abre a tela relacionada e funciona por toque no celular.
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('[data-resumo-acao]').forEach(function(card){
+    card.addEventListener('click', function(){
+      const acao=card.getAttribute('data-resumo-acao');
+      if(acao==='faturamento'){
+        if(typeof window.abrirTelaAdminCheia==='function') window.abrirTelaAdminCheia('financeiro');
+        return;
+      }
+      if(['agendamentos','atendidos','pendentes','cancelados'].includes(acao)){
+        const data=document.getElementById('data');
+        if(data) data.value=hojeLocal();
+        if(typeof window.abrirTelaAdminCheia==='function') window.abrirTelaAdminCheia('agenda');
+        else if(typeof window.mostrarTelaAdmin==='function') window.mostrarTelaAdmin('agenda');
+      }
+    }, {passive:true});
   });
 });
 </script>
