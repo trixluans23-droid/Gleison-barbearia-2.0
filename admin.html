@@ -2327,9 +2327,15 @@ async function atualizarHorariosAdmin(){
     return atualizarHorariosAdmin();
   }
   const dia=new Date(data+'T12:00:00').getDay();
-  const limite=dia===6 ? 23 : 20;
-  const inicio=8*60;
-  const fim=limite*60;
+  // Horário administrativo: terça a sexta 09:00–20:30; sábado 09:00–23:00.
+  // Domingo e segunda ficam bloqueados por padrão.
+  if(dia===0 || dia===1){
+    sel.innerHTML='<option value="">Barbearia fechada neste dia</option>';
+    return;
+  }
+  const limite=dia===6 ? 23*60 : (20*60+30);
+  const inicio=9*60;
+  const fim=limite;
 
   // Horários já ocupados no Supabase para a data escolhida.
   let ocupados=new Set();
@@ -2387,8 +2393,8 @@ async function agendarClienteAdmin(){
     return;
   }
   const btn=document.getElementById('adminAgBtn');
-  if(!nome||!telefone||telefoneDigitos.length<10||!data||!hora){
-    msg.innerHTML='<div class="error">Preencha nome, telefone, data e horário. O telefone deve ter pelo menos 10 dígitos.</div>';
+  if(!nome||!telefone||telefoneDigitos.length<10||!servico||!data||!hora){
+    msg.innerHTML='<div class="error">Preencha nome, telefone, serviço, data e horário. O telefone deve ter pelo menos 10 dígitos.</div>';
     return;
   }
 
