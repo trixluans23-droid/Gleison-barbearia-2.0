@@ -197,127 +197,164 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          p = Path("site/index.html")
-          s = p.read_text(encoding="utf-8")
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
 
-          code = r'''
+          code=r'''
           <style id="status-atendimento-online">
-          .atendimento-encerrado{border-color:rgba(220,53,69,.65)!important;box-shadow:0 0 0 1px rgba(220,53,69,.12) inset}
+          .atendimento-encerrado{border-color:rgba(220,53,69,.8)!important;box-shadow:0 0 0 2px rgba(220,53,69,.12) inset}
           .status-encerrado{display:inline-flex!important;align-items:center;gap:6px;background:#dc3545!important;color:#fff!important}
-          .acoes-atendimento-encerrado{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-          .acoes-atendimento-encerrado button{border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 14px;background:#171b1f;color:#fff;font:700 14px Arial,sans-serif;cursor:pointer}
-          .acoes-atendimento-encerrado button:active{transform:scale(.97)}
-          .acoes-atendimento-encerrado .btn-atendido{border-color:rgba(70,210,120,.55)}
-          .acoes-atendimento-encerrado .btn-nao-compareceu{border-color:rgba(220,53,69,.65)}
+          .acoes-atendimento-encerrado{display:flex!important;gap:10px;flex-wrap:wrap;margin-top:12px}
+          .acoes-atendimento-encerrado button{border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px 14px;background:#171b1f;color:#fff;font:700 14px Arial,sans-serif;cursor:pointer}
           .status-final-atendido{background:#28a745!important;color:#fff!important}
           .status-final-nao-compareceu{background:#dc3545!important;color:#fff!important}
           </style>
           <script id="status-atendimento-script">
           (function(){
-            var STORAGE_KEY="gleison_status_atendimentos_v1";
-            function ler(){
-              try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")}catch(e){return {}}
+            var KEY="gleison_status_atendimentos_v2";
+
+            function read(){
+              try{return JSON.parse(localStorage.getItem(KEY)||"{}");}
+              catch(e){return {};}
             }
-            function salvar(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}catch(e){}}
-            function normalizar(t){return (t||"").replace(/\s+/g," ").trim()}
-            function parseDataHora(txt){
-              var m=txt.match(/\b(\d{2})\/(\d{2})\/(\d{4})\s*[•·-]\s*(\d{2}):(\d{2})\b/);
+            function write(v){
+              try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}
+            }
+            function norm(v){return (v||"").replace(/\s+/g," ").trim();}
+
+            function getDate(text){
+              var m=norm(text).match(/(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/);
               if(!m)return null;
-              var d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]),Number(m[5]),0,0);
+              var d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],0,0);
               return isNaN(d.getTime())?null:d;
             }
-            function chave(card,dt){
-              var txt=normalizar(card.innerText||"");
-              var nome=(txt.match(/Cliente:\s*([^\n]+)/i)||[])[1]||"";
-              var serv=(txt.match(/\b(Corte(?:\s*\+\s*Barba)?|Barba|Sobrancelha|Serviço)\b/i)||[])[1]||"";
-              return dt.toISOString().slice(0,16)+"|"+normalizar(nome)+"|"+normalizar(serv);
+
+            function getCards(){
+              var dateNodes=Array.prototype.slice.call(document.querySelectorAll("body *")).filter(function(el){
+                var t=norm(el.textContent);
+                return /(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/.test(t);
+              });
+
+              var found=[];
+              dateNodes.forEach(function(node){
+                var el=node;
+                for(var i=0;i<7 && el;i++,el=el.parentElement){
+                  var t=norm(el.innerText);
+                  if(/Cliente:\s*/i.test(t) &&
+                     /\bAgendado\b/i.test(t) &&
+                     /(Remarcar|Cancelar)/i.test(t) &&
+                     getDate(t)){
+                    if(found.indexOf(el)<0) found.push(el);
+                    break;
+                  }
+                }
+              });
+              return found;
             }
-            function acharCards(){
-              var todos=Array.prototype.slice.call(document.querySelectorAll("article,section,li,div"));
-              return todos.filter(function(el){
-                var t=normalizar(el.innerText||"");
-                if(!/\b\d{2}\/\d{2}\/\d{4}\s*[•·-]\s*\d{2}:\d{2}\b/.test(t))return false;
-                if(!/Cliente:/i.test(t))return false;
-                if(!/\bAgendado\b/i.test(t)&&!/\bAtendido\b/i.test(t)&&!/\bNão compareceu\b/i.test(t)&&!/\bCancelado\b/i.test(t))return false;
-                var r=el.getBoundingClientRect();
-                if(r.width<200||r.height<100)return false;
-                return true;
-              }).filter(function(el,i,a){
-                return a.findIndex(function(x){
-                  return x.getBoundingClientRect().width===el.getBoundingClientRect().width &&
-                         x.getBoundingClientRect().height===el.getBoundingClientRect().height &&
-                         Math.abs(x.getBoundingClientRect().top-el.getBoundingClientRect().top)<2;
-                })===i;
+
+            function findStatus(card){
+              var nodes=Array.prototype.slice.call(card.querySelectorAll("button,span,strong,b,p,div"));
+              return nodes.find(function(el){
+                return /^(Agendado|Atendido|Não compareceu|Atendimento encerrado)$/i.test(norm(el.textContent));
               });
             }
-            function encontrarStatus(card){
-              var els=Array.prototype.slice.call(card.querySelectorAll("span,strong,b,button,div,p"));
-              return els.find(function(el){
-                return /^(Agendado|Atendido|Não compareceu|Atendimento encerrado)$/i.test(normalizar(el.textContent));
-              });
+
+            function keyFor(card,dt){
+              var t=norm(card.innerText);
+              var nome=(t.match(/Cliente:\s*([^\n]+)/i)||[])[1]||"";
+              var serv=(t.match(/^\s*(Corte(?:\s*\+\s*Barba)?|Barba|Sobrancelha|Serviço)\s*$/im)||[])[1]||"";
+              return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0")+"T"+String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0")+"|"+norm(nome)+"|"+norm(serv);
             }
-            function processar(){
-              var dados=ler(), agora=new Date();
-              acharCards().forEach(function(card){
-                var dt=parseDataHora(normalizar(card.innerText||""));
-                if(!dt || dt>=agora)return;
-                var status=encontrarStatus(card);
+
+            function process(){
+              var now=new Date(), saved=read();
+
+              getCards().forEach(function(card){
+                var dt=getDate(card.innerText);
+                if(!dt || dt>now)return;
+
+                var status=findStatus(card);
                 if(!status)return;
-                var txt=normalizar(status.textContent);
-                if(/^Cancelado$/i.test(txt))return;
-                var key=chave(card,dt);
-                var final=dados[key]||null;
+
+                var current=norm(status.textContent);
+                if(/^Cancelado$/i.test(current))return;
+
+                var key=keyFor(card,dt);
+                var final=saved[key];
+
                 card.classList.add("atendimento-encerrado");
+
                 if(final==="atendido"){
                   status.textContent="Atendido";
                   status.classList.add("status-final-atendido");
                   return;
                 }
+
                 if(final==="nao_compareceu"){
                   status.textContent="Não compareceu";
                   status.classList.add("status-final-nao-compareceu");
                   return;
                 }
+
                 status.textContent="Atendimento encerrado";
                 status.classList.add("status-encerrado");
+
                 if(card.querySelector(".acoes-atendimento-encerrado"))return;
+
                 var box=document.createElement("div");
                 box.className="acoes-atendimento-encerrado";
-                var b1=document.createElement("button");
-                b1.className="btn-atendido";
-                b1.type="button";
-                b1.textContent="✓ Atendido";
-                var b2=document.createElement("button");
-                b2.className="btn-nao-compareceu";
-                b2.type="button";
-                b2.textContent="✕ Não compareceu";
-                b1.onclick=function(){
-                  var d=ler();d[key]="atendido";salvar(d);
-                  status.textContent="Atendido";status.className=(status.className||"")+" status-final-atendido";
+
+                var ok=document.createElement("button");
+                ok.type="button";
+                ok.textContent="✓ Atendido";
+
+                var no=document.createElement("button");
+                no.type="button";
+                no.textContent="✕ Não compareceu";
+
+                ok.onclick=function(){
+                  var d=read();d[key]="atendido";write(d);
+                  status.textContent="Atendido";
+                  status.classList.add("status-final-atendido");
                   box.remove();
                 };
-                b2.onclick=function(){
-                  var d=ler();d[key]="nao_compareceu";salvar(d);
-                  status.textContent="Não compareceu";status.className=(status.className||"")+" status-final-nao-compareceu";
+
+                no.onclick=function(){
+                  var d=read();d[key]="nao_compareceu";write(d);
+                  status.textContent="Não compareceu";
+                  status.classList.add("status-final-nao-compareceu");
                   box.remove();
                 };
-                box.appendChild(b1);box.appendChild(b2);
+
+                box.appendChild(ok);
+                box.appendChild(no);
                 card.appendChild(box);
               });
             }
-            function iniciar(){
-              processar();
-              setInterval(processar,60000);
+
+            function start(){
+              process();
+              setInterval(process,30000);
+              new MutationObserver(function(){process();}).observe(document.body,{childList:true,subtree:true});
             }
-            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);
-            else iniciar();
+
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",start);
+            }else{
+              start();
+            }
           })();
           </script>
           '''
-          if 'id="status-atendimento-online"' not in s and "</body>" in s:
+
+          if 'id="status-atendimento-online"' in s:
+              import re
+              s=re.sub(r'<style id="status-atendimento-online">.*?</script>\s*', '', s, count=1, flags=re.S)
+          if "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
+
           p.write_text(s,encoding="utf-8")
-          print("Regra de atendimento encerrado adicionada.")
+          print("Regra de encerramento corrigida.")
           PY
 
       - name: Validar alterações do sistema
