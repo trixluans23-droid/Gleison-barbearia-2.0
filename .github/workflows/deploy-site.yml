@@ -185,7 +185,103 @@ jobs:
           </script>
           '''
 
-          if 'id="menu-tres-pontos-online"' not in s and "</body>" in s:
+          if 'id="menu-tres-pontos-online"' not in s and "
+          <script id="agenda-carregamento-online">
+          (function(){
+            function norm(v){ return (v||"").replace(/\s+/g," ").trim(); }
+            function parseAgendaDate(v){
+              var m=norm(v).match(/(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/);
+              if(!m)return null;
+              var d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],0,0);
+              return isNaN(d.getTime())?null:d;
+            }
+            function statusOrEncerrado(a){
+              var dt=parseAgendaDate(formatDateTime(a.data_hora));
+              var st=(a.status||"agendado").toLowerCase();
+              if(dt && dt.getTime()<Date.now() && st!=="cancelado" && st!=="atendido" && st!=="faltou"){
+                return "Atendimento encerrado";
+              }
+              return statusLabel(a.status);
+            }
+            window.loadMyAgenda = async function(){
+              var list=document.getElementById("agendaList");
+              if(!list)return;
+              var telefone=(localStorage.getItem("gleison_telefone")||"").trim();
+              if(!telefone){
+                list.innerHTML='<div class="card"><b>Nenhum agendamento encontrado</b><div class="small" style="margin-top:6px">Faça um agendamento primeiro. Seus próximos horários aparecerão aqui.</div></div>';
+                return;
+              }
+              list.innerHTML='<div class="card"><div class="small">Carregando sua agenda...</div></div>';
+              try{
+                var resultado=await Promise.race([
+                  supabaseClient.rpc("listar_agendamentos_cliente",{p_telefone:telefone}),
+                  new Promise(function(_,reject){setTimeout(function(){reject(new Error("TIMEOUT_AGENDA"));},12000);})
+                ]);
+                if(resultado.error)throw resultado.error;
+                var data=Array.isArray(resultado.data)?resultado.data:[];
+                data.sort(function(a,b){
+                  var sa=(statusOrEncerrado(a)||"").toLowerCase();
+                  var sb=(statusOrEncerrado(b)||"").toLowerCase();
+                  function ordem(x){
+                    if(x==="agendado"||x==="confirmado")return 0;
+                    if(x==="atendimento encerrado")return 1;
+                    if(x==="atendido")return 2;
+                    if(x==="faltou"||x==="não compareceu")return 3;
+                    if(x==="cancelado")return 4;
+                    return 5;
+                  }
+                  var oa=ordem(sa),ob=ordem(sb);
+                  if(oa!==ob)return oa-ob;
+                  return new Date(a.data_hora).getTime()-new Date(b.data_hora).getTime();
+                });
+                if(!data.length){
+                  list.innerHTML='<div class="card"><b>Nenhum agendamento</b><div class="small" style="margin-top:6px">Não há horários cadastrados para este telefone.</div></div>';
+                  return;
+                }
+                list.innerHTML=data.map(function(a){
+                  var st=statusOrEncerrado(a);
+                  var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
+                  return '<div class="card'+cls+'">'+
+                    '<div class="small">'+escapeHtml(formatDateTime(a.data_hora))+'</div>'+
+                    '<b style="display:block;margin-top:5px">'+escapeHtml(a.servico||a.observacoes||"Serviço")+'</b>'+
+                    '<div class="small" style="margin-top:6px">Cliente: '+escapeHtml(a.cliente_nome||"Cliente")+'</div>'+
+                    '<div style="margin-top:8px"><span class="badge">'+escapeHtml(st)+'</span></div>'+
+                  '</div>';
+                }).join("");
+              }catch(error){
+                console.error("Erro ao carregar agenda:",error);
+                list.innerHTML='<div class="card"><b>Não foi possível carregar a agenda.</b><div class="small" style="margin-top:6px">A conexão demorou para responder. Toque em Atualizar para tentar novamente.</div><button class="btn secondary" style="margin-top:10px;width:100%" type="button" onclick="loadMyAgenda()">↻ Tentar novamente</button></div>';
+              }
+            };
+            window.atualizarAgendaClienteAgora=function(btn){
+              if(btn){btn.disabled=true;btn.textContent="↻ Atualizando...";}
+              try{
+                var agenda=document.getElementById("agenda");
+                var aberta=agenda && !agenda.classList.contains("hidden");
+                if(aberta){
+                  window.loadMyAgenda().finally(function(){
+                    if(btn){btn.disabled=false;btn.textContent="↻ Atualizar";}
+                  });
+                  return;
+                }
+              }catch(e){}
+              window.location.replace(window.location.pathname+"?atualizar="+Date.now()+"&v=agenda");
+            };
+            document.addEventListener("DOMContentLoaded",function(){
+              var b=document.getElementById("btn-atualizar-online");
+              if(b){
+                b.onclick=function(){
+                  window.atualizarAgendaClienteAgora(b);
+                };
+              }
+            });
+          })();
+          </script>
+          <style id="agenda-carregamento-online-style">
+          .status-atendimento-encerrado{border-color:rgba(220,53,69,.8)!important;box-shadow:0 0 0 2px rgba(220,53,69,.12) inset}
+          </style>
+
+</body>" in s:
               s = s.replace("</body>", code + "</body>", 1)
 
           p.write_text(s, encoding="utf-8")
@@ -335,7 +431,7 @@ jobs:
             function start(){
               process();
               setInterval(process,30000);
-              new MutationObserver(function(){process();}).observe(document.body,{childList:true,subtree:true});
+              setInterval(process,30000);
             }
 
             if(document.readyState==="loading"){
@@ -467,7 +563,7 @@ jobs:
 
           # Garante que cada atualização do botão realmente gere uma URL nova.
           s=s.replace('window.location.replace(base+"?atualizar="+Date.now());',
-                      'window.location.replace(base+"?atualizar="+Date.now()+"&v=agenda");')
+                      'window.atualizarAgendaClienteAgora?window.atualizarAgendaClienteAgora(this):window.location.replace(base+"?atualizar="+Date.now()+"&v=agenda");')
 
           p.write_text(s,encoding="utf-8")
           print("Ordenação corrigida e atualização com cache-bust reforçada.")
