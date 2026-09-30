@@ -96,8 +96,10 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
 
 manifest = Path("GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml")
 ms = manifest.read_text(encoding="utf-8")
-if "android.permission.SCHEDULE_EXACT_ALARM" not in ms:
-    ms = ms.replace('<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />')
+if "android.permission.POST_NOTIFICATIONS" not in ms:
+    ms = ms.replace("<manifest", '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n\n<manifest', 1)
+elif "android.permission.SCHEDULE_EXACT_ALARM" not in ms:
+    ms = ms.replace('<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />', 1)
 if 'android:name=".GleisonReminderReceiver"' not in ms:
     ms = ms.replace("    </application>", '        <receiver android:name=".GleisonReminderReceiver" android:exported="false" />\n    </application>')
 manifest.write_text(ms, encoding="utf-8")
@@ -107,8 +109,12 @@ h = html.read_text(encoding="utf-8")
 if "GleisonAndroid.agendarLembrete" not in h:
     old = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    closeBooking();"
     new = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){\n      window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos, às '+selectedTime+' — '+servico+'.');\n    }\n    closeBooking();"
-    if old not in h:
-        raise SystemExit("Ponto de confirmação do agendamento não encontrado.")
-    h = h.replace(old, new, 1)
+    if old in h:
+        h = h.replace(old, new, 1)
+    else:
+        marker = "closeBooking();"
+        if marker not in h:
+            raise SystemExit("Não encontrei o ponto de fechamento da tela de agendamento.")
+        h = h.replace(marker, "if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){ window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos.'); }\n    " + marker, 1)
 html.write_text(h, encoding="utf-8")
 print("Integração nativa concluída.")
