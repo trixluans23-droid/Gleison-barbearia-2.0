@@ -2,6 +2,7 @@ name: Build APK - Som Gleison Barbearia
 # Build com som nativo do Android
 # Build com lembrete nativo corrigido para tela desligada
 # Rebuild após correção da integração HTML/Android
+# Permissões do Manifest corrigidas
 
 on:
   push:
