@@ -111,7 +111,6 @@ jobs:
               <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
               <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
               <button type="button" data-menu-acao="barbearia"><span class="ico">✂</span>Barbearia</button>
-              'data-menu-acao="administrador"',
               <button type="button" data-menu-acao="administrador"><span class="ico">⚙</span>Administrador</button>
               <button type="button" class="menu-fechar" data-menu-acao="fechar"><span class="ico">×</span>Fechar menu</button>
             </div>
@@ -504,6 +503,7 @@ jobs:
               'data-menu-acao="agenda"',
               'data-menu-acao="mensagens"',
               'data-menu-acao="barbearia"',
+              'data-menu-acao="administrador"',
           ]
           missing = [x for x in required if x not in s]
           if missing:
