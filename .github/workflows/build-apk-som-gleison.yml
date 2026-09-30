@@ -1,0 +1,90 @@
+name: Build APK - Som Gleison Barbearia
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-apk-som-gleison.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extrair projeto Android
+        run: |
+          rm -rf GleisonBarbeariaAndroid
+          unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
+          test -f GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java
+
+      - name: Criar som personalizado
+        run: |
+          mkdir -p GleisonBarbeariaAndroid/app/src/main/res/raw
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=880:duration=0.22" \
+            -f lavfi -i "sine=frequency=1320:duration=0.22" \
+            -f lavfi -i "sine=frequency=1760:duration=0.52" \
+            -filter_complex "[0:a]adelay=0|0[a0];[1:a]adelay=290|290[a1];[2:a]adelay=580|580[a2];[a0][a1][a2]amix=inputs=3:duration=longest,afade=t=in:st=0:d=0.01,afade=t=out:st=0.86:d=0.08,loudnorm=I=-14:TP=-1.5:LRA=7" \
+            -c:a libvorbis -q:a 5 \
+            GleisonBarbeariaAndroid/app/src/main/res/raw/gleison_notificacao.ogg
+
+      - name: Configurar notificação com som personalizado
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java")
+          s = p.read_text()
+          s = s.replace("import android.os.Build;", "import android.os.Build;\nimport android.net.Uri;")
+          s = s.replace(
+              'private static final String CHANNEL_ID = "gleison_notificacoes";',
+              'private static final String CHANNEL_ID = "gleison_notificacoes_v2";'
+          )
+          old = '''NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificações da Gleison Barbearia", NotificationManager.IMPORTANCE_HIGH);
+              channel.enableVibration(true);'''
+          new = '''NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificações da Gleison Barbearia", NotificationManager.IMPORTANCE_HIGH);
+              Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.gleison_notificacao);
+              android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
+                  .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                  .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                  .build();
+              channel.setSound(soundUri, audioAttributes);
+              channel.enableVibration(true);'''
+          if old not in s:
+              raise SystemExit("Trecho do NotificationChannel não encontrado; abortando para não alterar o arquivo errado.")
+          s = s.replace(old, new)
+          old2 = '.setDefaults(android.app.Notification.DEFAULT_SOUND | android.app.Notification.DEFAULT_VIBRATE);'
+          new2 = '.setVibrate(new long[]{0, 180, 70, 180, 70, 520});'
+          if old2 not in s:
+              raise SystemExit("Trecho do som padrão não encontrado; abortando para não alterar o arquivo errado.")
+          s = s.replace(old2, new2)
+          p.write_text(s)
+          PY
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Aceitar licenças
+        run: yes | sdkmanager --licenses || true
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Compilar APK
+        working-directory: GleisonBarbeariaAndroid
+        run: gradle assembleDebug
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GleisonBarbearia-2.0-som-gleison-debug-apk
+          path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
