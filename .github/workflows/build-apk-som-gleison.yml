@@ -133,11 +133,11 @@ jobs:
           java_dir = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app")
           main = java_dir / "MainActivity.java"
           src = main.read_text(encoding="utf-8")
-          src = src.replace("import android.webkit.WebViewClient;", "import android.webkit.WebViewClient;\nimport android.webkit.JavascriptInterface;")
+          src = src.replace("import android.webkit.WebViewClient;", "import android.webkit.WebViewClient;\nimport android.webkit.JavascriptInterface")
           src = src.replace("setContentView(webView);", "webView.addJavascriptInterface(new GleisonAndroidBridge(this), \"GleisonAndroid\");\n                  setContentView(webView);")
           main.write_text(src, encoding="utf-8")
 
-          (java_dir / "GleisonAndroidBridge.java").write_text(r'''package com.gleisonbarbearia.app;
+          (java_dir / "GleisonAndroidBridge.java").write_text("""package com.gleisonbarbearia.app;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -161,7 +161,6 @@ public class GleisonAndroidBridge {
             if (d == null) return;
             long trigger = d.getTime() - 20L * 60L * 1000L;
             if (trigger <= System.currentTimeMillis()) return;
-
             Intent intent = new Intent(context, GleisonReminderReceiver.class);
             intent.putExtra("titulo", titulo == null ? "Gleison Barbearia" : titulo);
             intent.putExtra("corpo", corpo == null ? "Seu horário é em aproximadamente 20 minutos." : corpo);
@@ -175,9 +174,9 @@ public class GleisonAndroidBridge {
         } catch (Exception ignored) {}
     }
 }
-''', encoding="utf-8")
+""", encoding="utf-8")
 
-          (java_dir / "GleisonReminderReceiver.java").write_text(r'''package com.gleisonbarbearia.app;
+          (java_dir / "GleisonReminderReceiver.java").write_text("""package com.gleisonbarbearia.app;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -215,7 +214,7 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
         manager.notify((int)(System.currentTimeMillis() & 0x7fffffff), b.build());
     }
 }
-''', encoding="utf-8")
+""", encoding="utf-8")
 
           manifest = Path("GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml")
           ms = manifest.read_text(encoding="utf-8")
@@ -230,11 +229,10 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
           old = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    closeBooking();"
           new = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){\n      window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos, às '+selectedTime+' — '+servico+'.');\n    }\n    closeBooking();"
           if "GleisonAndroid.agendarLembrete" not in h:
-              if old not in h:
-                  raise SystemExit("Ponto de confirmação do agendamento não encontrado.")
+              if old not in h: raise SystemExit("Ponto de confirmação do agendamento não encontrado.")
               h = h.replace(old, new, 1)
           html.write_text(h, encoding="utf-8")
-          print("Lembrete local nativo integrado ao agendamento.")
+          print("Lembrete nativo integrado ao agendamento.")
           PY
           grep -q "GleisonAndroid.agendarLembrete" GleisonBarbeariaAndroid/app/src/main/assets/index.html
           test -f GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/GleisonReminderReceiver.java
