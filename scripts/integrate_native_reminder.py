@@ -4,7 +4,7 @@ java_dir = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/
 main = java_dir / "MainActivity.java"
 src = main.read_text(encoding="utf-8")
 if "JavascriptInterface" not in src:
-    src = src.replace("import android.webkit.WebViewClient;", "import android.webkit.WebViewClient;\nimport android.webkit.JavascriptInterface")
+    src = src.replace("import android.webkit.WebViewClient;", "import android.webkit.WebViewClient;\nimport android.webkit.JavascriptInterface;")
 if "android.permission.POST_NOTIFICATIONS" not in src:
     src = src.replace("import android.os.Bundle;", "import android.os.Bundle;\nimport android.Manifest;\nimport android.app.AlarmManager;\nimport android.content.Intent;\nimport android.content.pm.PackageManager;\nimport android.net.Uri;\nimport android.provider.Settings;")
     src = src.replace("setContentView(webView);", """setContentView(webView);
