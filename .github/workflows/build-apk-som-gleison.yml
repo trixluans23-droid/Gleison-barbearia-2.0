@@ -87,6 +87,13 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Preparar compatibilidade AndroidX
+        run: |
+          PROPS="GleisonBarbeariaAndroid/gradle.properties"
+          touch "$PROPS"
+          grep -q '^android.useAndroidX=' "$PROPS" && sed -i 's/^android.useAndroidX=.*/android.useAndroidX=true/' "$PROPS" || echo 'android.useAndroidX=true' >> "$PROPS"
+          grep -q '^android.enableJetifier=' "$PROPS" && sed -i 's/^android.enableJetifier=.*/android.enableJetifier=true/' "$PROPS" || echo 'android.enableJetifier=true' >> "$PROPS"
+
       - name: Compilar APK
         working-directory: GleisonBarbeariaAndroid
         run: gradle assembleDebug
