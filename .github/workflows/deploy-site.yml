@@ -1417,8 +1417,8 @@ jobs:
           s=p.read_text(encoding="utf-8")
 
           # Remove a implementação experimental de biometria/passkey.
-          s=re.sub(r'<style[^>]*id=["\\']reconhecimento-biometrico-online-style["\\'][^>]*>.*?</style>\\s*', '', s, flags=re.S|re.I)
-          s=re.sub(r'<script[^>]*id=["\\']reconhecimento-biometrico-online-script["\\'][^>]*>.*?</script>\\s*', '', s, flags=re.S|re.I)
+           s=re.sub(r"<style[^>]*id=[\"']reconhecimento-biometrico-online-style[\"'][^>]*>.*?</style>\\s*", "", s, flags=re.S|re.I)
+           s=re.sub(r"<script[^>]*id=[\"']reconhecimento-biometrico-online-script[\"'][^>]*>.*?</script>\\s*", "", s, flags=re.S|re.I)
 
           # Remove qualquer script adicional que tenha sido criado especificamente para passkey/biometria.
           def limpar_script(m):
@@ -1436,9 +1436,9 @@ jobs:
           s=re.sub(r'<[^>]+>\\s*Este celular/navegador não oferece biometria por passkey\\.\\s*</[^>]+>\\s*', '', s, flags=re.S|re.I)
 
           # Remove a versão anterior da recuperação por link/magic-link.
-          s=re.sub(r'<style[^>]*id=["\\']recuperacao-conta-cliente-style["\\'][^>]*>.*?</style>\\s*', '', s, flags=re.S|re.I)
-          s=re.sub(r'<div[^>]*id=["\\']gc-recuperacao-overlay["\\'][^>]*>.*?</div>\\s*</div>\\s*', '', s, count=1, flags=re.S|re.I)
-          s=re.sub(r'<script[^>]*id=["\\']recuperacao-conta-cliente-script["\\'][^>]*>.*?</script>\\s*', '', s, flags=re.S|re.I)
+           s=re.sub(r"<style[^>]*id=[\"']recuperacao-conta-cliente-style[\"'][^>]*>.*?</style>\\s*", "", s, flags=re.S|re.I)
+           s=re.sub(r"<div[^>]*id=[\"']gc-recuperacao-overlay[\"'][^>]*>.*?</div>\\s*</div>\\s*", "", s, count=1, flags=re.S|re.I)
+           s=re.sub(r"<script[^>]*id=[\"']recuperacao-conta-cliente-script[\"'][^>]*>.*?</script>\\s*", "", s, flags=re.S|re.I)
 
           code=r'''
           <style id="recuperacao-senha-email-style">
