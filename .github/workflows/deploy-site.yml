@@ -372,7 +372,76 @@ jobs:
           s=p.read_text(encoding="utf-8")
 
           # Remove qualquer versão anterior do organizador para evitar scripts duplicados.
-          s=re.sub(r'\s*<script id="ordenacao-minha-agenda-script">.*?</script>\s*', '\n', s, count=1, flags=re.S)
+          s=re.sub(r'\s*<script id="ordenacao-minha-agenda-script">
+          (function(){
+            function norm(v){return (v||"").replace(/\s+/g," ").trim();}
+
+            function getDate(text){
+              var m=norm(text).match(/(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/);
+              if(!m)return null;
+              var d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],0,0);
+              return isNaN(d.getTime())?null:d;
+            }
+
+            function getCards(){
+              var list=document.getElementById("agendaList");
+              if(!list)return [];
+              return Array.prototype.slice.call(list.querySelectorAll(".card")).filter(function(card){
+                var t=norm(card.innerText);
+                return getDate(t) && /Cliente:\s*/i.test(t);
+              });
+            }
+
+            function status(card){
+              var t=norm(card.innerText).toLowerCase();
+              // Grupos: agendados primeiro, atendidos/encerrados depois, cancelados por último.
+              if(/\bagendado\b/.test(t)||/\bconfirmado\b/.test(t))return 0;
+              if(/\batendido\b/.test(t)||/\batendimento encerrado\b/.test(t)||/\bnão compareceu\b/.test(t))return 1;
+              if(/\bcancelado\b/.test(t))return 2;
+              return 3;
+            }
+
+            function sort(){
+              var cards=getCards();
+              if(cards.length<2)return;
+
+              var parent=cards[0].parentElement;
+              if(!parent)return;
+
+              cards=cards.filter(function(card){return card.parentElement===parent;});
+              cards.sort(function(a,b){
+                var sa=status(a), sb=status(b);
+                if(sa!==sb)return sa-sb;
+
+                var da=getDate(a.innerText), db=getDate(b.innerText);
+                var ta=da?da.getTime():Number.MAX_SAFE_INTEGER;
+                var tb=db?db.getTime():Number.MAX_SAFE_INTEGER;
+                return ta-tb;
+              });
+
+              var frag=document.createDocumentFragment();
+              cards.forEach(function(card){frag.appendChild(card);});
+              parent.appendChild(frag);
+            }
+
+            function start(){
+              sort();
+              setTimeout(sort,300);
+              setTimeout(sort,1000);
+              setTimeout(sort,2500);
+              setInterval(sort,5000);
+              new MutationObserver(function(){
+                setTimeout(sort,50);
+              }).observe(document.body,{childList:true,subtree:true});
+            }
+
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",start);
+            }else{
+              start();
+            }
+          })();
+          </script>\s*', '\n', s, count=1, flags=re.S)
 
           code=r'''
           <script id="ordenacao-minha-agenda-script">
