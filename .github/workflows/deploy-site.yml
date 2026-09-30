@@ -70,6 +70,35 @@ jobs:
           print("Botão Atualizar adicionado ao sistema online.")
           PY
 
+      - name: Mover perfil para o cabeçalho
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("site/index.html")
+          s = p.read_text(encoding="utf-8")
+
+          css = r'''
+          <style id="perfil-cabecalho-online">
+          .header-perfil-btn{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-left:6px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#171b1f;color:#fff;font-size:25px;cursor:pointer;flex:0 0 44px}
+          .header-perfil-btn:active{transform:scale(.95)}
+          @media(max-width:520px){.header-perfil-btn{width:42px;height:42px;flex-basis:42px;font-size:24px}}
+          .nav-account-stack{display:none!important}
+          </style>
+          '''
+
+          button = '<button class="header-perfil-btn" type="button" onclick="tab(\'perfil\',this)" aria-label="Meu perfil" title="Meu perfil">👤</button>'
+
+          if 'id="perfil-cabecalho-online"' not in s and "<head>" in s:
+              s = s.replace("</head>", css + "</head>", 1)
+
+          if 'class="header-perfil-btn"' not in s and 'class="header-notificacao-btn"' in s:
+              s = s.replace('</button>\n</header>', '</button>\n  ' + button + '\n</header>', 1)
+
+          p.write_text(s, encoding="utf-8")
+          print("Perfil movido para o canto superior direito.")
+          PY
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
