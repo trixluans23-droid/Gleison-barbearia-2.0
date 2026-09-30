@@ -27,13 +27,7 @@ jobs:
       - name: Criar som personalizado
         run: |
           mkdir -p GleisonBarbeariaAndroid/app/src/main/res/raw
-          ffmpeg -y \
-            -f lavfi -i "sine=frequency=880:duration=0.22" \
-            -f lavfi -i "sine=frequency=1320:duration=0.22" \
-            -f lavfi -i "sine=frequency=1760:duration=0.52" \
-            -filter_complex "[0:a]adelay=0|0[a0];[1:a]adelay=290|290[a1];[2:a]adelay=580|580[a2];[a0][a1][a2]amix=inputs=3:duration=longest,afade=t=in:st=0:d=0.01,afade=t=out:st=0.86:d=0.08,loudnorm=I=-14:TP=-1.5:LRA=7" \
-            -c:a libvorbis -q:a 5 \
-            GleisonBarbeariaAndroid/app/src/main/res/raw/gleison_notificacao.ogg
+          ffmpeg -y             -f lavfi -i "sine=frequency=880:duration=0.22"             -f lavfi -i "sine=frequency=1320:duration=0.22"             -f lavfi -i "sine=frequency=1760:duration=0.52"             -filter_complex "[0:a]adelay=0|0[a0];[1:a]adelay=290|290[a1];[2:a]adelay=580|580[a2];[a0][a1][a2]amix=inputs=3:duration=longest,afade=t=in:st=0:d=0.01,afade=t=out:st=0.86:d=0.08,loudnorm=I=-14:TP=-1.5:LRA=7"             -c:a libvorbis -q:a 5             GleisonBarbeariaAndroid/app/src/main/res/raw/gleison_notificacao.ogg
 
       - name: Configurar notificação com som personalizado
         run: |
@@ -44,9 +38,9 @@ jobs:
           if "import android.net.Uri;" not in s:
               marker = "import android.os.Build;"
               if marker in s:
-                  s = s.replace(marker, marker + "\\nimport android.net.Uri;", 1)
+                  s = s.replace(marker, marker + "\nimport android.net.Uri;", 1)
               else:
-                  s = "import android.net.Uri;\\n" + s
+                  s = "import android.net.Uri;\n" + s
           if "R.raw.gleison_notificacao" not in s:
               marker = "NotificationChannel channel = new NotificationChannel("
               pos = s.find(marker)
