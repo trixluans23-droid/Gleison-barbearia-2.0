@@ -107,7 +107,7 @@ jobs:
           <div id="menu-tres-pontos-overlay" aria-hidden="true">
             <div id="menu-tres-pontos" role="menu" aria-label="Menu principal">
               <div class="menu-titulo">Menu</div>
-              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>
+              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>\n              <button type="button" data-menu-acao="historico"><span class="ico">📋</span>Meu histórico</button>
               <button type="button" data-menu-acao="inicio"><span class="ico">⌂</span>Início</button>
               <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
               <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
@@ -482,6 +482,81 @@ jobs:
 
           p.write_text(s,encoding="utf-8")
           print("Cadastro único do cliente adicionado.")
+          PY
+
+
+      - name: Histórico do cliente
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+          code=r'''
+          <style id="historico-cliente-online-style">
+          #gc-historico-overlay{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72)}
+          #gc-historico-overlay.aberto{display:flex}
+          #gc-historico-modal{width:min(470px,100%);max-height:88vh;overflow:auto;background:#11161a;color:#fff;border:1px solid rgba(242,193,78,.35);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.65);padding:20px}
+          #gc-historico-modal h2{margin:0 0 6px;color:#f2c14e;font:800 23px Arial,sans-serif}
+          #gc-historico-modal .gc-hist-sub{margin:0 0 14px;color:#aeb5bb;font:400 13px/1.4 Arial,sans-serif}
+          .gc-hist-card{padding:13px 14px;margin:9px 0;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:#171c20}
+          .gc-hist-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+          .gc-hist-servico{font:800 15px Arial,sans-serif;color:#fff}
+          .gc-hist-status{font:800 11px Arial,sans-serif;padding:5px 8px;border-radius:999px}
+          .gc-hist-status.atendido{background:#4dcc83;color:#171717}.gc-hist-status.cancelado{background:#e53955;color:#fff}
+          .gc-hist-info{margin-top:7px;color:#c7ccd2;font:600 13px/1.45 Arial,sans-serif}
+          .gc-hist-preco{margin-top:5px;color:#f2c14e;font:800 14px Arial,sans-serif}
+          #gc-historico-fechar{width:100%;margin-top:12px;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px;background:#171c20;color:#fff;font:800 15px Arial,sans-serif}
+          .gc-hist-vazio{padding:18px 4px;color:#aeb5bb;text-align:center;font:600 14px Arial,sans-serif}
+          </style>
+          <div id="gc-historico-overlay" aria-hidden="true">
+            <div id="gc-historico-modal" role="dialog" aria-modal="true" aria-labelledby="gc-historico-titulo">
+              <h2 id="gc-historico-titulo">📋 Meu histórico</h2>
+              <p class="gc-hist-sub">Seus atendimentos anteriores ficam registrados aqui.</p>
+              <div id="gc-historico-lista"><div class="gc-hist-vazio">Carregando histórico...</div></div>
+              <button type="button" id="gc-historico-fechar">Fechar</button>
+            </div>
+          </div>
+          <script id="historico-cliente-online-script">
+          (function(){
+            function sb(){try{return window.supabaseClient||supabaseClient}catch(e){return null}}
+            function digits(v){return String(v||"").replace(/\D/g,"")}
+            function money(v){return v==null||v===""?"":Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+            function fmtDate(v){
+              var d=new Date(v); if(isNaN(d.getTime()))return "Data não disponível";
+              return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"})+" às "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+            }
+            function abrir(){var o=document.getElementById("gc-historico-overlay");if(o){o.classList.add("aberto");o.setAttribute("aria-hidden","false")}}
+            function fechar(){var o=document.getElementById("gc-historico-overlay");if(o){o.classList.remove("aberto");o.setAttribute("aria-hidden","true")}}
+            async function carregar(){
+              var lista=document.getElementById("gc-historico-lista"), telefone=localStorage.getItem("gleison_telefone")||"";
+              if(!lista)return;
+              if(digits(telefone).length!==11){lista.innerHTML='<div class="gc-hist-vazio">Faça seu cadastro para visualizar seu histórico.</div>';return}
+              var client=sb(); if(!client){lista.innerHTML='<div class="gc-hist-vazio">Sistema ainda está carregando.</div>';return}
+              lista.innerHTML='<div class="gc-hist-vazio">Carregando histórico...</div>';
+              try{
+                var r=await client.rpc("listar_historico_cliente",{p_telefone:telefone});
+                if(r.error)throw r.error;
+                var rows=Array.isArray(r.data)?r.data:[];
+                if(!rows.length){lista.innerHTML='<div class="gc-hist-vazio">Você ainda não possui atendimentos anteriores.</div>';return}
+                lista.innerHTML=rows.map(function(a){
+                  var st=a.status==="atendido"?"Atendido":"Cancelado";
+                  var cls=a.status==="atendido"?"atendido":"cancelado";
+                  return '<div class="gc-hist-card"><div class="gc-hist-top"><div class="gc-hist-servico">'+String(a.servico_nome||"Serviço").replace(/[&<>]/g,function(x){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[x]})+'</div><span class="gc-hist-status '+cls+'">'+st+'</span></div><div class="gc-hist-info">📅 '+fmtDate(a.data_hora)+'<br>✂️ '+String(a.barbeiro_nome||"Gleison")+'</div>'+(a.preco!=null?'<div class="gc-hist-preco">'+money(a.preco)+'</div>':"")+'</div>';
+                }).join("");
+              }catch(e){console.error(e);lista.innerHTML='<div class="gc-hist-vazio">Não foi possível carregar o histórico agora.</div>'}
+            }
+            window.abrirHistoricoCliente=function(){abrir();carregar()};
+            document.addEventListener("click",function(e){
+              var b=e.target.closest("[data-menu-acao='historico']"); if(b){e.preventDefault();e.stopImmediatePropagation();window.abrirHistoricoCliente();return}
+              if(e.target.id==="gc-historico-fechar"||e.target.id==="gc-historico-overlay")fechar();
+            },true);
+          })();
+          </script>
+          '''
+          if 'id="historico-cliente-online-style"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Histórico do cliente adicionado.")
           PY
 
       - name: Recuperação de conta do cliente
