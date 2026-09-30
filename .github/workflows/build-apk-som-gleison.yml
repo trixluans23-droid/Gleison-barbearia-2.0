@@ -27,7 +27,8 @@ jobs:
           cp admin.html GleisonBarbeariaAndroid/app/src/main/assets/admin.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/index.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/admin.html
-          grep -q "Gleison Barbearia" GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          test $(wc -c < GleisonBarbeariaAndroid/app/src/main/assets/index.html) -gt 10000
+          test $(wc -c < GleisonBarbeariaAndroid/app/src/main/assets/admin.html) -gt 10000
           echo "Sistema completo e admin preparados para o APK."
 
       - name: Instalar FFmpeg
