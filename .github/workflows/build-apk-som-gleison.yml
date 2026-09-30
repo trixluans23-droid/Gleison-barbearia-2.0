@@ -168,3 +168,4 @@ jobs:
           path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
 
 # Rebuild manual para testar a correção do lembrete nativo
+# Correção do import JavascriptInterface
