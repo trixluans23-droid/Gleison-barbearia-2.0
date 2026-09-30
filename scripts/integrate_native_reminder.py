@@ -5,6 +5,22 @@ main = java_dir / "MainActivity.java"
 src = main.read_text(encoding="utf-8")
 if "JavascriptInterface" not in src:
     src = src.replace("import android.webkit.WebViewClient;", "import android.webkit.WebViewClient;\nimport android.webkit.JavascriptInterface")
+if "android.permission.POST_NOTIFICATIONS" not in src:
+    src = src.replace("import android.os.Bundle;", "import android.os.Bundle;\nimport android.Manifest;\nimport android.app.AlarmManager;\nimport android.content.Intent;\nimport android.content.pm.PackageManager;\nimport android.net.Uri;\nimport android.provider.Settings;")
+    src = src.replace("setContentView(webView);", """setContentView(webView);
+                  if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                      checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                      requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+                  }
+                  if (android.os.Build.VERSION.SDK_INT >= 31) {
+                      AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                      if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                          try {
+                              startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                  Uri.parse("package:" + getPackageName())));
+                          } catch (Exception ignored) {}
+                      }
+                  }""", 1)
 if "GleisonAndroidBridge" not in src:
     src = src.replace("setContentView(webView);", 'webView.addJavascriptInterface(new GleisonAndroidBridge(this), "GleisonAndroid");\n                  setContentView(webView);')
 main.write_text(src, encoding="utf-8")
@@ -67,7 +83,7 @@ import android.media.RingtoneManager;
 import android.os.Build;
 
 public class GleisonReminderReceiver extends BroadcastReceiver {
-    private static final String CHANNEL_ID = "gleison_lembrete_v3";
+    private static final String CHANNEL_ID = "gleison_lembrete_v4";
 
     @Override public void onReceive(Context context, Intent received) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
