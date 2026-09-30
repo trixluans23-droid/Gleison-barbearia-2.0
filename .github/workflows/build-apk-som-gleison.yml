@@ -27,7 +27,7 @@ jobs:
       - name: Criar som personalizado
         run: |
           mkdir -p GleisonBarbeariaAndroid/app/src/main/res/raw
-          ffmpeg -y             -f lavfi -i "sine=frequency=880:duration=0.22"             -f lavfi -i "sine=frequency=1320:duration=0.22"             -f lavfi -i "sine=frequency=1760:duration=0.52"             -filter_complex "[0:a]adelay=0|0[a0];[1:a]adelay=290|290[a1];[2:a]adelay=580|580[a2];[a0][a1][a2]amix=inputs=3:duration=longest,afade=t=in:st=0:d=0.01,afade=t=out:st=0.86:d=0.08,loudnorm=I=-14:TP=-1.5:LRA=7"             -c:a libvorbis -q:a 5             GleisonBarbeariaAndroid/app/src/main/res/raw/gleison_notificacao.ogg
+          ffmpeg -y -f lavfi -i "sine=frequency=880:duration=0.22" -f lavfi -i "sine=frequency=1320:duration=0.22" -f lavfi -i "sine=frequency=1760:duration=0.52" -filter_complex "[0:a]adelay=0|0[a0];[1:a]adelay=290|290[a1];[2:a]adelay=580|580[a2];[a0][a1][a2]amix=inputs=3:duration=longest,afade=t=in:st=0:d=0.01,afade=t=out:st=0.86:d=0.08,loudnorm=I=-14:TP=-1.5:LRA=7" -c:a libvorbis -q:a 5 GleisonBarbeariaAndroid/app/src/main/res/raw/gleison_notificacao.ogg
 
       - name: Configurar notificação com som personalizado
         run: |
@@ -35,6 +35,9 @@ jobs:
           from pathlib import Path
           p = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java")
           s = p.read_text()
+          # The service class already has the same simple name as Firebase's base class,
+          # so do not import FirebaseMessagingService; it would create a name collision.
+          s = s.replace("import com.google.firebase.messaging.FirebaseMessagingService;\n", "")
           if "import android.net.Uri;" not in s:
               marker = "import android.os.Build;"
               if marker in s:
