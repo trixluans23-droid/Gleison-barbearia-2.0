@@ -602,8 +602,7 @@ jobs:
                   var st=statusFinal(a);
                   var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
                   var statusCor=String(st||"").toLowerCase();
-                  var classeStatus=statusCor==="cancelado"?" agenda-status-cancelado":(statusCor==="atendido"?" agenda-status-atendido":((statusCor==="agendado"||statusCor==="confirmado")?" agenda-status-agendado":""));
-                  var estiloBadge=classeStatus?' class="badge'+classeStatus+'"':' class="badge"';
+                  var estiloBadge=statusCor==="cancelado"?' style="background:#e53955!important;color:#fff!important;border-color:#e53955!important"':((statusCor==="agendado"||statusCor==="confirmado")?' style="background:#f2c14e!important;color:#171717!important;border-color:#f2c14e!important"':(statusCor==="atendido"?' style="background:#4dcc83!important;color:#171717!important;border-color:#4dcc83!important"':''));
                   var ativo=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
                   var botoes=ativo ?
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+
