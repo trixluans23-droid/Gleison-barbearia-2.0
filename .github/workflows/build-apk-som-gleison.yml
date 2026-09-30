@@ -39,23 +39,30 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import re
           p = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java")
           s = p.read_text()
           if "import android.net.Uri;" not in s:
-              s = s.replace("import android.os.Build;", "import android.os.Build;\nimport android.net.Uri;", 1)
+              marker = "import android.os.Build;"
+              if marker in s:
+                  s = s.replace(marker, marker + "\\nimport android.net.Uri;", 1)
+              else:
+                  s = "import android.net.Uri;\\n" + s
           if "R.raw.gleison_notificacao" not in s:
-              pat = r'(NotificationChannel\\s+channel\\s*=\\s*new\\s+NotificationChannel\\([^;]+;)([\\s\\S]*?)(channel\\.enableVibration\\(true\\);)'
-              m = re.search(pat, s)
-              if not m:
-                  raise SystemExit("Não encontrei a criação do NotificationChannel no FirebaseMessagingService.java.")
-              insert = '''\\n    Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.gleison_notificacao);
+              marker = "NotificationChannel channel = new NotificationChannel("
+              pos = s.find(marker)
+              if pos < 0:
+                  raise SystemExit("Não encontrei a criação do NotificationChannel.")
+              endline = s.find("channel.enableVibration(true);", pos)
+              if endline < 0:
+                  raise SystemExit("Não encontrei o fim da configuração do NotificationChannel.")
+              insert = '''    Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.gleison_notificacao);
               android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
                   .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
                   .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                   .build();
-              channel.setSound(soundUri, audioAttributes);'''
-              s = s[:m.end(1)] + insert + s[m.end(1):]
+              channel.setSound(soundUri, audioAttributes);
+              '''
+              s = s[:endline] + insert + s[endline:]
           s = s.replace('.setDefaults(android.app.Notification.DEFAULT_SOUND | android.app.Notification.DEFAULT_VIBRATE);',
                         '.setVibrate(new long[]{0, 180, 70, 180, 70, 520});')
           s = s.replace('.setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE);',
