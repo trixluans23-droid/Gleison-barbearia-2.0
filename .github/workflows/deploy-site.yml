@@ -70,7 +70,7 @@ jobs:
           print("Botão Atualizar adicionado ao sistema online.")
           PY
 
-      - name: Mover perfil para o cabeçalho
+      - name: Substituir navegação inferior pelo menu de três pontos
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -78,26 +78,150 @@ jobs:
           p = Path("site/index.html")
           s = p.read_text(encoding="utf-8")
 
-          css = r'''
-          <style id="perfil-cabecalho-online">
-          .header-perfil-btn{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-left:6px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#171b1f;color:#fff;font-size:25px;cursor:pointer;flex:0 0 44px}
-          .header-perfil-btn:active{transform:scale(.95)}
-          @media(max-width:520px){.header-perfil-btn{width:42px;height:42px;flex-basis:42px;font-size:24px}}
+          # Remove o botão de perfil que a versão anterior do deploy adicionava.
+          s = s.replace('<button class="header-perfil-btn" type="button" onclick="tab(\'perfil\',this)" aria-label="Meu perfil" title="Meu perfil">👤</button>', '')
+
+          code = r'''
+          <style id="menu-tres-pontos-online">
+          #menu-tres-pontos-btn{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-left:6px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#171b1f;color:#fff;font:700 25px/1 Arial,sans-serif;cursor:pointer;flex:0 0 44px;padding:0}
+          #menu-tres-pontos-btn:active{transform:scale(.95)}
+          #menu-tres-pontos-overlay{display:none;position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.38)}
+          #menu-tres-pontos-overlay.aberto{display:block}
+          #menu-tres-pontos{position:absolute;top:68px;right:14px;width:min(300px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow:auto;background:#171b1f;border:1px solid rgba(242,193,78,.35);border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.5);padding:8px}
+          #menu-tres-pontos .menu-titulo{padding:10px 12px 8px;color:#f2c14e;font:700 14px Arial,sans-serif}
+          #menu-tres-pontos button{display:flex;align-items:center;width:100%;min-height:46px;border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;padding:10px 12px;font:600 15px Arial,sans-serif;cursor:pointer}
+          #menu-tres-pontos button:active,#menu-tres-pontos button:hover{background:rgba(242,193,78,.12)}
+          #menu-tres-pontos button .ico{width:28px;flex:0 0 28px;font-size:18px}
+          #menu-tres-pontos .menu-fechar{margin-top:4px;border-top:1px solid rgba(255,255,255,.1);color:#f2c14e}
           .nav-account-stack{display:none!important}
+          .header-perfil-btn{display:none!important}
+          @media(max-width:520px){
+            #menu-tres-pontos-btn{width:42px;height:42px;flex-basis:42px;font-size:24px}
+            #menu-tres-pontos{top:62px}
+          }
           </style>
+
+          <div id="menu-tres-pontos-overlay" aria-hidden="true">
+            <div id="menu-tres-pontos" role="menu" aria-label="Menu principal">
+              <div class="menu-titulo">Menu</div>
+              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>
+              <button type="button" data-menu-acao="inicio"><span class="ico">⌂</span>Início</button>
+              <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
+              <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
+              <button type="button" data-menu-acao="barbearia"><span class="ico">✂</span>Barbearia</button>
+              <button type="button" class="menu-fechar" data-menu-acao="fechar"><span class="ico">×</span>Fechar menu</button>
+            </div>
+          </div>
+
+          <script id="menu-tres-pontos-script">
+          (function(){
+            function fecharMenu(){
+              var o=document.getElementById("menu-tres-pontos-overlay");
+              if(o){o.classList.remove("aberto");o.setAttribute("aria-hidden","true");}
+            }
+            function abrirMenu(){
+              var o=document.getElementById("menu-tres-pontos-overlay");
+              if(o){o.classList.add("aberto");o.setAttribute("aria-hidden","false");}
+            }
+            function clicarTab(nome){
+              if(typeof window.tab==="function"){
+                try{ window.tab(nome); return true; }catch(e){}
+              }
+              var botoes=Array.prototype.slice.call(document.querySelectorAll("button,a,[role='button']"));
+              var b=botoes.find(function(el){
+                var t=(el.innerText||el.textContent||"").trim().toLowerCase();
+                if(nome==="inicio") return t==="início"||t==="inicio";
+                if(nome==="agenda") return t==="agenda"||t.includes("agendamento");
+                if(nome==="mensagens") return t==="mensagens";
+                if(nome==="barbearia") return t==="barbearia";
+                if(nome==="perfil") return t==="perfil"||t==="meu perfil";
+                return false;
+              });
+              if(b){b.click();return true;}
+              return false;
+            }
+            function esconderNavegacaoInferior(){
+              var els=Array.prototype.slice.call(document.querySelectorAll("nav,footer,[class*='bottom'],[class*='nav']"));
+              var candidatos=els.filter(function(el){
+                if(el.id==="menu-tres-pontos-overlay") return false;
+                var txt=(el.innerText||"").replace(/\s+/g," ").toLowerCase();
+                if(!(txt.includes("agenda")&&txt.includes("mensagens")&&txt.includes("barbearia"))) return false;
+                var r=el.getBoundingClientRect(), cs=getComputedStyle(el);
+                return r.bottom>=window.innerHeight-140 && (cs.position==="fixed"||cs.position==="sticky"||cs.position==="absolute");
+              });
+              candidatos.sort(function(a,b){return a.getBoundingClientRect().height-b.getBoundingClientRect().height;});
+              if(candidatos[0]) candidatos[0].style.setProperty("display","none","important");
+            }
+            function prepararMenu(){
+              var header=document.querySelector("header");
+              if(!header || document.getElementById("menu-tres-pontos-btn")) return;
+              var btn=document.createElement("button");
+              btn.id="menu-tres-pontos-btn";
+              btn.type="button";
+              btn.setAttribute("aria-label","Abrir menu");
+              btn.setAttribute("title","Menu");
+              btn.innerHTML="⋮";
+              btn.addEventListener("click",function(e){e.stopPropagation();abrirMenu();});
+              header.appendChild(btn);
+            }
+            document.addEventListener("click",function(e){
+              var item=e.target.closest("[data-menu-acao]");
+              if(!item) return;
+              var acao=item.getAttribute("data-menu-acao");
+              if(acao==="fechar"){fecharMenu();return;}
+              fecharMenu();
+              clicarTab(acao);
+            });
+            var overlay=document.getElementById("menu-tres-pontos-overlay");
+            if(overlay) overlay.addEventListener("click",function(e){if(e.target===overlay)fecharMenu();});
+            document.addEventListener("keydown",function(e){if(e.key==="Escape")fecharMenu();});
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",function(){prepararMenu();esconderNavegacaoInferior();});
+            }else{
+              prepararMenu();esconderNavegacaoInferior();
+            }
+            window.addEventListener("resize",esconderNavegacaoInferior);
+          })();
+          </script>
           '''
 
-          button = '<button class="header-perfil-btn" type="button" onclick="tab(\'perfil\',this)" aria-label="Meu perfil" title="Meu perfil">👤</button>'
-
-          if 'id="perfil-cabecalho-online"' not in s and "<head>" in s:
-              s = s.replace("</head>", css + "</head>", 1)
-
-          if 'class="header-perfil-btn"' not in s and 'class="header-notificacao-btn"' in s:
-              s = s.replace('</button>\n</header>', '</button>\n  ' + button + '\n</header>', 1)
+          if 'id="menu-tres-pontos-online"' not in s and "</body>" in s:
+              s = s.replace("</body>", code + "</body>", 1)
 
           p.write_text(s, encoding="utf-8")
-          print("Perfil movido para o canto superior direito.")
+          print("Menu de três pontos preparado; navegação inferior será ocultada.")
           PY
+
+      - name: Validar alterações do sistema
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          s = Path("site/index.html").read_text(encoding="utf-8")
+          required = [
+              'id="btn-atualizar-online"',
+              'id="menu-tres-pontos-online"',
+              'data-menu-acao="perfil"',
+              'data-menu-acao="inicio"',
+              'data-menu-acao="agenda"',
+              'data-menu-acao="mensagens"',
+              'data-menu-acao="barbearia"',
+          ]
+          missing = [x for x in required if x not in s]
+          if missing:
+              raise SystemExit("Validação falhou; faltando: " + ", ".join(missing))
+          if s.count('id="menu-tres-pontos-online"') != 1:
+              raise SystemExit("Validação falhou: menu duplicado.")
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          menu_scripts = [x for x in scripts if 'function esconderNavegacaoInferior' in x]
+          if len(menu_scripts) != 1:
+              raise SystemExit("Validação falhou: script do menu não encontrado exatamente uma vez.")
+          Path("/tmp/menu-check.js").write_text(menu_scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/menu-check.js
+          test -s site/index.html
+          echo "Validação concluída: estrutura e sintaxe JavaScript OK."
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
