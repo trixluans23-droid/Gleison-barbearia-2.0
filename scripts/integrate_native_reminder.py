@@ -97,11 +97,13 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
 manifest = Path("GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml")
 ms = manifest.read_text(encoding="utf-8")
 if "android.permission.POST_NOTIFICATIONS" not in ms:
-    ms = ms.replace("<manifest", '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n\n<manifest', 1)
-elif "android.permission.SCHEDULE_EXACT_ALARM" not in ms:
-    ms = ms.replace('<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />', 1)
-if 'android:name=".GleisonReminderReceiver"' not in ms:
-    ms = ms.replace("    </application>", '        <receiver android:name=".GleisonReminderReceiver" android:exported="false" />\n    </application>')
+    pos = ms.find(">")
+    if pos < 0:
+        raise SystemExit("AndroidManifest.xml inválido.")
+    ms = ms[:pos+1] + '\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' + ms[pos+1:]
+if "android.permission.SCHEDULE_EXACT_ALARM" not in ms:
+    pos = ms.find(">")
+    ms = ms[:pos+1] + '\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />' + ms[pos+1:]
 manifest.write_text(ms, encoding="utf-8")
 
 html = Path("GleisonBarbeariaAndroid/app/src/main/assets/index.html")
