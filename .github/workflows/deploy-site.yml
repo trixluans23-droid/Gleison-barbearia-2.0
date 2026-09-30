@@ -32,10 +32,12 @@ jobs:
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
 
           test -f GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          test -f admin.html
 
           mkdir -p site
 
           cp GleisonBarbeariaAndroid/app/src/main/assets/index.html site/index.html
+          cp admin.html site/admin.html
 
           echo "Sistema preparado para publicação."
 
@@ -109,6 +111,8 @@ jobs:
               <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
               <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
               <button type="button" data-menu-acao="barbearia"><span class="ico">✂</span>Barbearia</button>
+              'data-menu-acao="administrador"',
+              <button type="button" data-menu-acao="administrador"><span class="ico">⚙</span>Administrador</button>
               <button type="button" class="menu-fechar" data-menu-acao="fechar"><span class="ico">×</span>Fechar menu</button>
             </div>
           </div>
@@ -169,6 +173,7 @@ jobs:
               if(!item) return;
               var acao=item.getAttribute("data-menu-acao");
               if(acao==="fechar"){fecharMenu();return;}
+              if(acao==="administrador"){window.location.href="admin.html";return;}
               fecharMenu();
               clicarTab(acao);
             });
@@ -513,6 +518,7 @@ jobs:
           PY
           node --check /tmp/menu-check.js
           test -s site/index.html
+          test -s site/admin.html
           echo "Validação concluída: estrutura e sintaxe JavaScript OK."
 
       - name: Corrigir carregamento da Minha agenda
