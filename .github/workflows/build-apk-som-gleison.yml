@@ -39,31 +39,27 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
+          import re
           p = Path("GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java")
           s = p.read_text()
-          s = s.replace("import android.os.Build;", "import android.os.Build;\nimport android.net.Uri;")
-          s = s.replace(
-              'private static final String CHANNEL_ID = "gleison_notificacoes";',
-              'private static final String CHANNEL_ID = "gleison_notificacoes_v2";'
-          )
-          old = '''NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificações da Gleison Barbearia", NotificationManager.IMPORTANCE_HIGH);
-              channel.enableVibration(true);'''
-          new = '''NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificações da Gleison Barbearia", NotificationManager.IMPORTANCE_HIGH);
-              Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.gleison_notificacao);
+          if "import android.net.Uri;" not in s:
+              s = s.replace("import android.os.Build;", "import android.os.Build;\nimport android.net.Uri;", 1)
+          if "R.raw.gleison_notificacao" not in s:
+              pat = r'(NotificationChannel\\s+channel\\s*=\\s*new\\s+NotificationChannel\\([^;]+;)([\\s\\S]*?)(channel\\.enableVibration\\(true\\);)'
+              m = re.search(pat, s)
+              if not m:
+                  raise SystemExit("Não encontrei a criação do NotificationChannel no FirebaseMessagingService.java.")
+              insert = '''\\n    Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.gleison_notificacao);
               android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
                   .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
                   .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                   .build();
-              channel.setSound(soundUri, audioAttributes);
-              channel.enableVibration(true);'''
-          if old not in s:
-              raise SystemExit("Trecho do NotificationChannel não encontrado; abortando para não alterar o arquivo errado.")
-          s = s.replace(old, new)
-          old2 = '.setDefaults(android.app.Notification.DEFAULT_SOUND | android.app.Notification.DEFAULT_VIBRATE);'
-          new2 = '.setVibrate(new long[]{0, 180, 70, 180, 70, 520});'
-          if old2 not in s:
-              raise SystemExit("Trecho do som padrão não encontrado; abortando para não alterar o arquivo errado.")
-          s = s.replace(old2, new2)
+              channel.setSound(soundUri, audioAttributes);'''
+              s = s[:m.end(1)] + insert + s[m.end(1):]
+          s = s.replace('.setDefaults(android.app.Notification.DEFAULT_SOUND | android.app.Notification.DEFAULT_VIBRATE);',
+                        '.setVibrate(new long[]{0, 180, 70, 180, 70, 520});')
+          s = s.replace('.setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE);',
+                        '.setVibrate(new long[]{0, 180, 70, 180, 70, 520});')
           p.write_text(s)
           PY
 
