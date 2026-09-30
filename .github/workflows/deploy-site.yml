@@ -598,6 +598,10 @@ jobs:
                 list.innerHTML=data.map(function(a){
                   var st=statusFinal(a);
                   var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
+                  var statusCor=String(st||"").toLowerCase();
+                  var corFundo=statusCor==="cancelado"?"#e53955":statusCor==="atendido"?"#4dcc83":(statusCor==="agendado"||statusCor==="confirmado")?"#f2c14e":"";
+                  var corTexto=corFundo?"#171717":"";
+                  var estiloBadge=corFundo?' style="background:'+corFundo+'!important;color:'+corTexto+'!important;border-color:'+corFundo+'!important"':'';
                   var ativo=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
                   var botoes=ativo ?
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+
@@ -608,7 +612,7 @@ jobs:
                     '<div class="small">'+escapeHtml(formatDateTime(a.data_hora))+'</div>'+
                     '<b style="display:block;margin-top:5px">'+escapeHtml(a.servico||a.observacoes||"Serviço")+'</b>'+
                     '<div class="small" style="margin-top:6px">Cliente: '+escapeHtml(a.cliente_nome||"Cliente")+'</div>'+
-                    '<div style="margin-top:8px"><span class="badge">'+escapeHtml(st)+'</span></div>'+
+                    '<div style="margin-top:8px"><span class="badge"'+estiloBadge+'>'+escapeHtml(st)+'</span></div>'+
                     botoes+
                   '</div>';
                 }).join("");
