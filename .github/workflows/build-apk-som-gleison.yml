@@ -23,30 +23,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # O ZIP do projeto Android contém uma versão antiga do index.html.
-          # O sistema oficial atual é o site gerado pelo workflow Publicar sistema online.
-          RUN_ID="$(gh api "repos/${{ github.repository }}/actions/workflows/deploy-site.yml/runs?status=success&branch=main&per_page=10" --jq '.workflow_runs | map(select(.head_sha != "${{ github.sha }}")) | .[0].id')"
-          test -n "$RUN_ID"
-          ARTIFACT_ID="$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts?per_page=20" --jq '.artifacts[] | select(.name=="github-pages" and .expired==false) | .id' | head -n 1)"
-          test -n "$ARTIFACT_ID"
+          # O APK deve usar exatamente a versão atualmente publicada no GitHub Pages.
           rm -rf /tmp/site-atual
           mkdir -p /tmp/site-atual
-          gh api --method GET -H "Accept: application/vnd.github+json" "/repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/github-pages.zip
-          unzip -q -o /tmp/github-pages.zip -d /tmp/site-atual
-          CURRENT_INDEX="$(find /tmp/site-atual -type f -name index.html -print -quit)"
-          test -n "$CURRENT_INDEX"
-          cp "$CURRENT_INDEX" GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          curl -fsSL "https://trixluans23-droid.github.io/Gleison-barbearia-2.0/index.html?build=${{ github.run_id }}" -o /tmp/site-atual/index.html
+          cp /tmp/site-atual/index.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
           cp admin.html GleisonBarbeariaAndroid/app/src/main/assets/admin.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/index.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/admin.html
-
-          # Confirma que o APK recebeu recursos que não existiam na versão antiga.
-          grep -q 'menu-tres-pontos-online' GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          grep -q 'btn-atualizar-online' GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          grep -q 'Meu histórico' GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          grep -q 'Administrador' GleisonBarbeariaAndroid/app/src/main/assets/index.html
-          echo "Sistema online atual copiado para o APK a partir do deploy #$RUN_ID (artefato $ARTIFACT_ID)."
-
+          grep -q "GLEISON BARBEARIA" GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          echo "Sistema publicado atualmente copiado para o APK."
           cat > GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/MainActivity.java <<'JAVA'
           package com.gleisonbarbearia.app;
 
