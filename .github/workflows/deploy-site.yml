@@ -798,6 +798,11 @@ jobs:
           echo "=== TERMOS ADMINISTRATIVOS NO CÓDIGO ==="
           grep -RniE "admin|administr|painel|senha|password|gestor" GleisonBarbeariaAndroid/app/src/main/assets --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' | head -200 || true
 
+      - name: Investigar seleção de serviço
+        run: |
+          echo "=== ELEMENTOS DE SERVIÇO E AGENDAMENTO ==="
+          grep -niE "servi[cç]o|selecion.*servi|escolh.*servi|agendar|agendamento|continuar|pr[oó]ximo|confirmar" GleisonBarbeariaAndroid/app/src/main/assets/index.html | head -250 || true
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
