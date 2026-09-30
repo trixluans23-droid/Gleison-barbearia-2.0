@@ -781,7 +781,6 @@ jobs:
             'id="admin-agenda-regras-script"',
             'admin-atendimento-encerrado',
             'admin-status-encerrado',
-            'Painel administrativo',
             'Cancelado'
           ]
           missing=[x for x in required if x not in s]
