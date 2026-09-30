@@ -650,6 +650,78 @@ jobs:
           print("Carregamento da Minha agenda corrigido.")
           PY
 
+      - name: Exigir serviço antes de confirmar agendamento
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <script id="validar-servico-agendamento-online">
+          (function(){
+            function validar(){
+              var fn=window.confirmBooking;
+              if(typeof fn!=="function" || fn.__servicoObrigatorio)return;
+
+              async function confirmBookingComServico(){
+                var select=document.getElementById("service");
+                var servico=select ? String(select.value||"").trim() : "";
+
+                if(!servico){
+                  if(typeof window.showToast==="function"){
+                    window.showToast("Escolha um serviço antes de confirmar o agendamento.");
+                  }else{
+                    alert("Escolha um serviço antes de confirmar o agendamento.");
+                  }
+                  if(select){
+                    select.focus();
+                    select.style.borderColor="#dc3545";
+                    setTimeout(function(){select.style.borderColor="";},1800);
+                  }
+                  return;
+                }
+
+                return fn.apply(this,arguments);
+              }
+
+              confirmBookingComServico.__servicoObrigatorio=true;
+              window.confirmBooking=confirmBookingComServico;
+            }
+
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",function(){
+                setTimeout(validar,100);
+                setTimeout(validar,800);
+              });
+            }else{
+              setTimeout(validar,100);
+              setTimeout(validar,800);
+            }
+          })();
+          </script>
+          '''
+
+          if 'id="validar-servico-agendamento-online"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+
+          p.write_text(s,encoding="utf-8")
+          print("Validação de serviço obrigatório adicionada.")
+          PY
+
+      - name: Validar serviço obrigatório
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("site/index.html").read_text(encoding="utf-8")
+          for x in ['id="validar-servico-agendamento-online"','Escolha um serviço antes de confirmar o agendamento.']:
+              if x not in s:
+                  raise SystemExit("Validação falhou; faltando: "+x)
+          print("Validação de serviço obrigatório OK.")
+          PY
+
       - name: Aplicar mesmas regras na agenda do administrador
         run: |
           python3 - <<'PY'
