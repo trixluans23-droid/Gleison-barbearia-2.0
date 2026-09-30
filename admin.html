@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta content="#08090b" name="theme-color"/>
-<title>Gleison Barbearia — Painel V15</title>
+<title>Gleison Barbearia — Painel Administrativo V34</title>
 <style>
 :root{--bg:#070809;--panel:#111417;--panel2:#171b1f;--gold:#d8a63b;--gold2:#f2c766;--text:#f5f5f5;--muted:#a8adb3;--green:#4bd37b;--red:#ff5c5c;--line:#2a2f34}
 *{box-sizing:border-box}
@@ -46,6 +46,28 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 .photo-modal-close{position:fixed;top:18px;right:18px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .photo-modal-caption{position:fixed;bottom:18px;left:20px;right:20px;text-align:center;color:#fff;font-weight:700;font-size:15px}
 @media(max-width:520px){.toolbar{grid-template-columns:1fr}.app{width:100%}}
+
+/* Segurança: tela de login do administrador */
+#adminLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(180deg,#070809,#0c0f12)}
+#adminLogin .login-card{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+#adminLogin .login-logo{text-align:center;font-size:30px;margin-bottom:8px}
+#adminLogin h1{margin:0;text-align:center;color:var(--gold2);font-size:22px}
+#adminLogin .login-sub{text-align:center;color:var(--muted);font-size:13px;margin:7px 0 20px}
+#adminLogin input{margin-bottom:12px}
+#adminLogin .login-error{min-height:20px;color:var(--red);font-size:13px;margin:4px 0 10px;text-align:center}
+#adminLogin button{width:100%;min-height:48px;font-size:16px}
+#adminLogin .login-loading{color:var(--muted);font-size:12px;text-align:center;margin-top:10px;display:none}
+#btnLogoutAdmin{margin-left:4px}
+@media(max-width:520px){#adminLogin .login-card{padding:20px}}
+
+/* Minha conta do administrador */
+.conta-card{margin-top:14px}
+.conta-title{font-weight:900;font-size:19px}
+.conta-sub{color:var(--muted);font-size:13px;margin-top:5px;line-height:1.45}
+.conta-secao{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.conta-msg{min-height:20px;margin-top:10px;font-size:13px}
+.conta-email-atual{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;word-break:break-word}
+
 
 .message-panel{margin-top:14px}
 .message-list-admin{display:flex;flex-direction:column;gap:10px;max-height:55vh;overflow-y:auto}
@@ -121,20 +143,36 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
   text-align:center;
   margin:4px 0 10px;
 }
-</style>
 
-<style>
-.horario-selecionado{margin-top:6px;padding:12px;border:1px solid var(--gold);border-radius:12px;background:rgba(216,166,59,.10);font-weight:900;text-align:center;color:var(--gold2)}
-.horarios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;max-height:300px;overflow:auto;padding:2px}
-.horario-btn{min-height:46px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--text);font-weight:900;font-size:15px}
-.horario-btn.disponivel{cursor:pointer}
-.horario-btn.selecionado{background:var(--gold);color:#111;border-color:var(--gold)}
-.horario-btn.ocupado,.horario-btn.passado{opacity:.42;cursor:not-allowed;text-decoration:line-through}
-@media(max-width:420px){.horarios-grid{grid-template-columns:repeat(3,1fr);gap:7px}.horario-btn{font-size:14px;min-height:44px}}
+/* V31 — gerenciamento de preços */
+.preco-admin-item{display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:end}
+.preco-admin-nome{font-weight:900;font-size:16px}
+.preco-admin-sub{color:var(--muted);font-size:12px;margin-top:4px}
+.preco-admin-valor{display:flex;align-items:center;gap:6px}
+.preco-admin-valor span{color:var(--muted);font-weight:900}
+.preco-admin-valor input{min-width:0;background:#ffffff !important;color:#111111 !important;-webkit-text-fill-color:#111111 !important;caret-color:#111111 !important;font-weight:900;font-size:18px;border:2px solid #d8d8d8}.preco-admin-valor input::placeholder{color:#777 !important;-webkit-text-fill-color:#777 !important;opacity:1}
+@media(max-width:520px){.preco-admin-item{grid-template-columns:1fr}.preco-admin-valor{max-width:220px}}
 </style>
-</head>
+<style>.preco-admin-input::placeholder{color:#555 !important;opacity:1 !important;-webkit-text-fill-color:#555 !important}.preco-admin-input:disabled{color:#111 !important;-webkit-text-fill-color:#111 !important;opacity:1 !important}</style></head>
 <body>
-<div class="app">
+<div id="adminLogin">
+  <div class="login-card">
+    <div class="login-logo">💈</div>
+    <h1>GLEISON BARBEARIA</h1>
+    <div class="login-sub">Acesso exclusivo ao painel administrativo</div>
+    <form id="adminLoginForm">
+      <label for="adminLoginEmail">E-mail</label>
+      <input id="adminLoginEmail" type="email" autocomplete="username" placeholder="E-mail do administrador" required>
+      <label for="adminLoginPassword">Senha</label>
+      <input id="adminLoginPassword" type="password" autocomplete="current-password" placeholder="Senha" required>
+      <div class="login-error" id="adminLoginError"></div>
+      <button class="btn primary" id="adminLoginBtn" type="submit">Entrar</button>
+      <div class="login-loading" id="adminLoginLoading">Verificando acesso...</div>
+    </form>
+  </div>
+</div>
+
+<div class="app" id="adminApp" style="display:none">
 <header>
 <div style="display:flex;align-items:center;gap:12px;min-width:0">
 <div id="fotoBarbeiroHeaderWrap" onclick="document.getElementById('fotoBarbeiroInput').click()" style="width:58px;height:58px;border-radius:50%;overflow:hidden;border:2px solid var(--gold);background:var(--panel2);display:grid;place-items:center;flex:none;cursor:pointer" title="Alterar foto do Gleison">
@@ -150,6 +188,7 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <input accept="image/*" id="fotoBarbeiroInput" onchange="enviarFotoBarbeiro(event)" style="display:none" type="file"/>
 <button class="btn" id="btnFotoBarbeiro" onclick="document.getElementById('fotoBarbeiroInput').click()" type="button">📷 Foto</button>
 <button class="btn" id="atualizarTudoAdminBtn" onclick="atualizarTudoAdminAgora(this)" type="button">↻ Atualizar</button>
+<button class="btn" id="btnLogoutAdmin" onclick="sairAdmin()" type="button">Sair</button>
 </div>
 </header>
 <div class="status-barbearia-card" id="statusBarbeariaCard" style="margin:16px 0 18px;padding:16px;border:2px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 4px 18px rgba(0,0,0,.25)">
@@ -157,7 +196,21 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <div class="status-barbearia-sub" id="statusBarbeariaTexto" style="font-size:16px;font-weight:900">Carregando status...</div>
 <div class="status-barbearia-sub" id="motivoBarbeariaTexto" style="margin-top:6px"></div>
 <button class="btn primary" id="btnStatusBarbearia" onclick="alternarStatusBarbearia()" style="width:100%;margin-top:14px;min-height:54px;font-size:17px;font-weight:900" type="button">Carregando...</button>
-</div><div class="admin-menu-title">PAINEL DO GLEISON</div><div class="admin-menu"><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('mensagens')" type="button">💬 Mensagens</button></div>
+</div>
+<div class="status-barbearia-card" id="excecaoFuncionamentoCard" style="margin:0 0 18px;padding:16px;border:2px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 4px 18px rgba(0,0,0,.25)">
+<div style="font-weight:900;font-size:18px;margin-bottom:6px">📅 Alteração excepcional de funcionamento</div>
+<div class="small" style="margin-bottom:12px">Escolha um dia futuro. Você pode <b>abrir domingo/segunda</b> excepcionalmente ou <b>fechar qualquer dia</b> em que a barbearia não poderá trabalhar.</div>
+<label for="excecaoDataAdmin" style="display:block;font-weight:800;margin-bottom:6px">Data</label>
+<input id="excecaoDataAdmin" type="date" style="width:100%;box-sizing:border-box"/>
+<div id="excecaoStatusAdmin" class="small" style="margin-top:10px;font-weight:800">⏳ Verificando...</div>
+<div id="excecaoMotivoAdmin" class="small" style="margin-top:5px"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+<button class="btn primary" id="btnAbrirExcecaoAdmin" onclick="abrirDiaExcepcionalAdmin()" type="button">🟢 Abrir este dia</button>
+<button class="btn" id="btnFecharExcecaoAdmin" onclick="fecharDiaExcepcionalAdmin()" type="button">🔴 Fechar este dia</button>
+</div>
+<button class="btn" id="btnRestaurarExcecaoAdmin" onclick="restaurarPadraoDiaAdmin()" style="width:100%;margin-top:8px" type="button">↩️ Restaurar padrão</button>
+<div id="excecaoMensagemAdmin" style="margin-top:10px"></div>
+</div><div class="admin-menu-title">PAINEL DO GLEISON</div><div class="admin-menu"><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="mostrarTelaAdmin('precos')" type="button">💲 Preços</button></div>
 
 <section class="section admin-view" id="viewAgenda">
 <div class="toolbar">
@@ -202,6 +255,28 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 </div>
 </div>
 </div>
+</div></div><div class="admin-view" id="viewConta"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card conta-card">
+<div class="conta-title">⚙️ Minha conta</div>
+<div class="conta-sub">Esta conta pertence à administração da Gleison Barbearia. Você pode alterar o e-mail e a senha sem alterar as funções do painel.</div>
+<div style="margin-top:16px;font-weight:700">E-mail atual</div>
+<div class="conta-email-atual" id="contaEmailAtual">Carregando...</div>
+<div class="conta-secao">
+<div style="font-weight:900;font-size:16px">Alterar e-mail</div>
+<div class="conta-sub">Por segurança, o Supabase pode enviar um e-mail de confirmação para concluir a troca.</div>
+<label style="margin-top:12px">Novo e-mail</label>
+<input id="novoEmailAdmin" type="email" autocomplete="email" placeholder="novo@email.com"/>
+<button class="btn primary" id="btnAlterarEmail" onclick="alterarEmailAdmin()" style="width:100%;margin-top:10px" type="button">Salvar novo e-mail</button>
+<div class="conta-msg" id="mensagemEmailAdmin"></div>
+</div>
+<div class="conta-secao">
+<div style="font-weight:900;font-size:16px">Alterar senha</div>
+<label style="margin-top:12px">Nova senha</label>
+<input id="novaSenhaAdmin" type="password" autocomplete="new-password" placeholder="Digite a nova senha"/>
+<label style="margin-top:10px">Confirmar nova senha</label>
+<input id="confirmarSenhaAdmin" type="password" autocomplete="new-password" placeholder="Digite novamente a nova senha"/>
+<button class="btn primary" id="btnAlterarSenha" onclick="alterarSenhaAdmin()" style="width:100%;margin-top:10px" type="button">Salvar nova senha</button>
+<div class="conta-msg" id="mensagemSenhaAdmin"></div>
+</div>
 </div></div><div class="admin-view" id="viewFinanceiro"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" id="painelFinanceiro" style="margin-top:14px">
 <div style="font-weight:900;font-size:17px">Painel financeiro</div>
 <div class="small" style="margin-top:5px">Consulte o faturamento de um dia, da semana ou do mês.</div>
@@ -215,7 +290,7 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <div class="summary-card"><div class="summary-label">Atendimentos</div><div class="summary-value" id="financeiroAtendidos">0</div></div>
 <div class="summary-card"><div class="summary-label">Faturamento</div><div class="summary-value" id="financeiroTotal">R$ 0,00</div></div>
 </div>
-</div></div><div class="admin-view" id="viewAgendar"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" style="margin-top:12px"><div style="font-weight:900;font-size:20px">📅 Agendar cliente</div><div class="small" style="margin-top:5px">Cadastre um horário diretamente pelo painel do barbeiro.</div></div><div class="card" style="margin-top:12px">
+</div></div><div class="admin-view" id="viewPrecos"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" style="margin-top:12px"><div style="font-weight:900;font-size:20px">💲 Alterar preços</div><div class="small" style="margin-top:5px">Escolha o serviço, digite o novo preço e toque em <b>Salvar</b>. A alteração será gravada no Supabase e aparecerá no aplicativo do cliente.</div><button class="btn" onclick="carregarPrecosAdmin()" style="width:100%;margin-top:12px" type="button">🔄 Atualizar lista</button><div id="precosAdminLista" class="list" style="margin-top:14px"><div class="empty">Carregando serviços...</div></div><div id="precosAdminMensagem"></div></div></div><div class="admin-view" id="viewAgendar"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card" style="margin-top:12px"><div style="font-weight:900;font-size:20px">📅 Agendar cliente</div><div class="small" style="margin-top:5px">Cadastre um horário diretamente pelo painel do barbeiro.</div></div><div class="card" style="margin-top:12px">
 <label>Nome do cliente</label>
 <input id="adminAgNome" maxlength="120" placeholder="Nome completo" type="text"/>
 <label style="margin-top:10px">Telefone</label>
@@ -223,18 +298,12 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 <div class="small" style="margin-top:5px">O telefone será salvo com a formatação correta, mas o sistema continua comparando apenas os números.</div>
 <label style="margin-top:10px">Serviço</label>
 <select id="adminAgServico">
-<option value="Corte">Corte — R$ 35,00</option>
-<option value="Barba">Barba — R$ 30,00</option>
-<option value="Corte + Barba">Corte + Barba — R$ 60,00</option>
-<option value="Sobrancelha">Sobrancelha — R$ 20,00</option>
+<option value="">Carregando serviços...</option>
 </select>
 <label style="margin-top:10px">Data</label>
-<input id="adminAgData" type="date"/>
+<input id="adminAgData" type="date" min=""/>
 <label style="margin-top:10px">Horário</label>
-<select id="adminAgHora" style="display:none"></select>
-<div id="adminAgHoraSelecionada" class="horario-selecionado">Escolha um horário</div>
-<div id="adminAgHorarios" class="horarios-grid" aria-label="Escolha o horário"></div>
-<div class="small" style="margin-top:7px">🟢 Disponível • 🔴 Ocupado • ⚪ Horário já passado</div>
+<select id="adminAgHora"></select>
 <div id="adminAgMensagem" style="margin-top:12px"></div>
 <button class="btn primary" id="adminAgBtn" onclick="agendarClienteAdmin()" style="width:100%;margin-top:14px;min-height:52px;font-size:16px;font-weight:900" type="button">📅 Confirmar agendamento</button>
 </div></div>
@@ -254,22 +323,212 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 </div>
 <button aria-label="Fechar" class="photo-modal-close" onclick="fecharFoto()">×</button>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://qumwaizimhlucnqyshbu.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9JkI1dljRX-vBQ5iNWFQMQ_AlBZupZ8';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let ACCESS_TOKEN = '';
+let ADMIN_AUTH_READY = false;
+let PRECOS_SERVICOS_ADMIN = {};
+let SERVICOS_ADMIN_CACHE = [];
+
+async function obterToken(){
+  if(ACCESS_TOKEN) return ACCESS_TOKEN;
+  const {data:{session}} = await supabaseClient.auth.getSession();
+  if(session && session.access_token){
+    ACCESS_TOKEN=session.access_token;
+    return ACCESS_TOKEN;
+  }
+  throw new Error('Administrador não autenticado.');
+}
+
 async function chamarRPC(nome, body){
+  const token=await obterToken();
   const resposta = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + nome, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_PUBLISHABLE_KEY
+      'Authorization': 'Bearer ' + token
     },
     body: JSON.stringify(body)
   });
   const texto = await resposta.text();
   if(!resposta.ok) throw new Error('Supabase ' + resposta.status + ': ' + texto);
   try { return JSON.parse(texto); } catch { return texto; }
+}
+
+async function verificarAdminAtual(){
+  const token=await obterToken();
+  const resposta=await fetch(SUPABASE_URL+'/rest/v1/admin_users?select=user_id,nome,ativo&user_id=eq.'+encodeURIComponent((await supabaseClient.auth.getUser()).data.user.id),{
+    headers:{
+      'apikey':SUPABASE_PUBLISHABLE_KEY,
+      'Authorization':'Bearer '+token
+    }
+  });
+  if(!resposta.ok) return false;
+  const rows=await resposta.json();
+  return Array.isArray(rows) && rows.length===1 && rows[0].ativo===true;
+}
+
+function mostrarLogin(mensagem=''){
+  ADMIN_AUTH_READY=false;
+  document.getElementById('adminApp').style.display='none';
+  document.getElementById('adminLogin').style.display='flex';
+  const erro=document.getElementById('adminLoginError');
+  if(erro) erro.textContent=mensagem;
+}
+
+function mostrarPainel(){
+  ADMIN_AUTH_READY=true;
+  document.getElementById('adminLogin').style.display='none';
+  document.getElementById('adminApp').style.display='block';
+}
+
+async function inicializarPainelAdmin(){
+  if(!ADMIN_AUTH_READY) return;
+  document.getElementById('data').value=hojeLocal();
+  await Promise.allSettled([carregarServicosAdmin(),carregarFotoBarbeiro(),carregarStatusBarbearia(),carregarMensagensAdmin()]);
+  iniciarControleExcecaoAdmin();
+  await verPeriodo('dia');
+}
+
+async function entrarAdmin(email,senha){
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email:email.trim(),password:senha});
+  if(error) throw error;
+  ACCESS_TOKEN=data.session?.access_token||'';
+  if(!ACCESS_TOKEN) throw new Error('Não foi possível criar a sessão.');
+  const autorizado=await verificarAdminAtual();
+  if(!autorizado){
+    await supabaseClient.auth.signOut();
+    ACCESS_TOKEN='';
+    throw new Error('Esta conta não tem permissão de administrador.');
+  }
+  mostrarPainel();
+  await inicializarPainelAdmin();
+}
+
+async function sairAdmin(){
+  await supabaseClient.auth.signOut();
+  ACCESS_TOKEN='';
+  mostrarLogin('Sessão encerrada.');
+  const form=document.getElementById('adminLoginForm');
+  if(form) form.reset();
+}
+
+async function iniciarSegurancaAdmin(){
+  const form=document.getElementById('adminLoginForm');
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const email=document.getElementById('adminLoginEmail').value;
+    const senha=document.getElementById('adminLoginPassword').value;
+    const btn=document.getElementById('adminLoginBtn');
+    const loading=document.getElementById('adminLoginLoading');
+    const erro=document.getElementById('adminLoginError');
+    btn.disabled=true; loading.style.display='block'; erro.textContent='';
+    try{
+      await entrarAdmin(email,senha);
+    }catch(err){
+      console.error(err);
+      mostrarLogin('E-mail, senha ou permissão de administrador inválidos.');
+    }finally{
+      btn.disabled=false; loading.style.display='none';
+    }
+  });
+
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(session){
+    ACCESS_TOKEN=session.access_token||'';
+    try{
+      if(await verificarAdminAtual()){
+        mostrarPainel();
+        await inicializarPainelAdmin();
+        return;
+      }
+    }catch(e){ console.error(e); }
+    await supabaseClient.auth.signOut();
+    ACCESS_TOKEN='';
+  }
+  mostrarLogin('');
+
+  supabaseClient.auth.onAuthStateChange((_event,sessionAtual)=>{
+    ACCESS_TOKEN=sessionAtual?.access_token||'';
+    if(!sessionAtual) mostrarLogin('Sessão encerrada.');
+  });
+}
+
+async function carregarDadosContaAdmin(){
+  try{
+    const {data:{user},error}=await supabaseClient.auth.getUser();
+    if(error || !user) throw new Error('Sessão não encontrada.');
+    const email=document.getElementById('contaEmailAtual');
+    if(email) email.textContent=user.email || 'E-mail não disponível';
+    const novo=document.getElementById('novoEmailAdmin');
+    if(novo) novo.value='';
+    const senha=document.getElementById('novaSenhaAdmin');
+    const conf=document.getElementById('confirmarSenhaAdmin');
+    if(senha) senha.value='';
+    if(conf) conf.value='';
+  }catch(e){
+    console.error(e);
+    const el=document.getElementById('contaEmailAtual');
+    if(el) el.textContent='Não foi possível carregar a conta.';
+  }
+}
+
+async function alterarEmailAdmin(){
+  const input=document.getElementById('novoEmailAdmin');
+  const msg=document.getElementById('mensagemEmailAdmin');
+  const btn=document.getElementById('btnAlterarEmail');
+  const novo=(input?.value||'').trim().toLowerCase();
+  msg.textContent=''; msg.className='conta-msg';
+  if(!novo || !novo.includes('@')){
+    msg.textContent='Digite um e-mail válido.'; msg.className='conta-msg error'; return;
+  }
+  try{
+    btn.disabled=true; btn.textContent='Salvando...';
+    const {error}=await supabaseClient.auth.updateUser({email:novo});
+    if(error) throw error;
+    msg.textContent='Pedido de alteração enviado. Verifique o e-mail para confirmar a troca, se a confirmação estiver habilitada no Supabase.';
+    msg.className='conta-msg success';
+    input.value='';
+  }catch(e){
+    console.error(e);
+    msg.textContent='Não foi possível alterar o e-mail: '+(e.message||'erro desconhecido');
+    msg.className='conta-msg error';
+  }finally{
+    btn.disabled=false; btn.textContent='Salvar novo e-mail';
+  }
+}
+
+async function alterarSenhaAdmin(){
+  const senha=document.getElementById('novaSenhaAdmin').value;
+  const conf=document.getElementById('confirmarSenhaAdmin').value;
+  const msg=document.getElementById('mensagemSenhaAdmin');
+  const btn=document.getElementById('btnAlterarSenha');
+  msg.textContent=''; msg.className='conta-msg';
+  if(senha.length<8){
+    msg.textContent='A nova senha deve ter pelo menos 8 caracteres.'; msg.className='conta-msg error'; return;
+  }
+  if(senha!==conf){
+    msg.textContent='As senhas não são iguais.'; msg.className='conta-msg error'; return;
+  }
+  try{
+    btn.disabled=true; btn.textContent='Salvando...';
+    const {error}=await supabaseClient.auth.updateUser({password:senha});
+    if(error) throw error;
+    msg.textContent='Senha alterada com sucesso.';
+    msg.className='conta-msg success';
+    document.getElementById('novaSenhaAdmin').value='';
+    document.getElementById('confirmarSenhaAdmin').value='';
+  }catch(e){
+    console.error(e);
+    msg.textContent='Não foi possível alterar a senha: '+(e.message||'erro desconhecido');
+    msg.className='conta-msg error';
+  }finally{
+    btn.disabled=false; btn.textContent='Salvar nova senha';
+  }
 }
 
 async function criarUrlFoto(path){
@@ -279,7 +538,7 @@ async function criarUrlFoto(path){
     headers: {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_PUBLISHABLE_KEY
+      'Authorization': 'Bearer ' + ACCESS_TOKEN
     },
     body: JSON.stringify({expiresIn: 3600})
   });
@@ -361,8 +620,13 @@ function fecharFoto(){
   img.removeAttribute('src');
 }
 
+function normalizarNomeServicoAdmin(nome){
+  return String(nome||'').toLowerCase().trim();
+}
 function precoServico(servico){
-  const s=String(servico||'').toLowerCase().trim();
+  const chave=normalizarNomeServicoAdmin(servico);
+  if(Object.prototype.hasOwnProperty.call(PRECOS_SERVICOS_ADMIN,chave)) return Number(PRECOS_SERVICOS_ADMIN[chave]||0);
+  const s=chave;
   if(s.includes('corte + barba') || s.includes('corte e barba')) return 60;
   if(s.includes('sobrancelha')) return 20;
   if(s.includes('barba') && !s.includes('corte')) return 30;
@@ -579,7 +843,7 @@ async function enviarFotoBarbeiro(event){
       headers:{
         'Content-Type':file.type||'image/jpeg',
         'apikey':SUPABASE_PUBLISHABLE_KEY,
-        'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,
+        'Authorization':'Bearer '+ACCESS_TOKEN,
         'x-upsert':'false'
       },
       body:file
@@ -609,7 +873,7 @@ async function criarUrlFotoAdmin(path){
       headers:{
         'Content-Type':'application/json',
         'apikey':SUPABASE_PUBLISHABLE_KEY,
-        'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY
+        'Authorization':'Bearer '+ACCESS_TOKEN
       },
       body:JSON.stringify({expiresIn:3600})
     });
@@ -830,7 +1094,7 @@ async function alternarGravacaoAdmin(){
             headers:{
               'Content-Type':tipo,
               'apikey':SUPABASE_PUBLISHABLE_KEY,
-              'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,
+              'Authorization':'Bearer '+ACCESS_TOKEN,
               'x-upsert':'false'
             },
             body:blob
@@ -904,7 +1168,7 @@ async function criarUrlAudioAdmin(path){
         headers:{
           'Content-Type':'application/json',
           'apikey':SUPABASE_PUBLISHABLE_KEY,
-          'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY
+          'Authorization':'Bearer '+ACCESS_TOKEN
         },
         body:JSON.stringify({expiresIn:3600})
       }
@@ -989,29 +1253,256 @@ async function alterarStatus(id,status){
 }
 
 
+function diaSemanaAdmin(data){
+  if(!data) return null;
+  const p=String(data).split('-').map(Number);
+  if(p.length!==3 || p.some(Number.isNaN)) return null;
+  return new Date(p[0],p[1]-1,p[2]).getDay();
+}
+
+function nomeDiaAdmin(data){
+  const d=diaSemanaAdmin(data);
+  return ({0:'domingo',1:'segunda-feira',2:'terça-feira',3:'quarta-feira',4:'quinta-feira',5:'sexta-feira',6:'sábado'})[d] || '';
+}
+
+async function carregarStatusExcecaoAdmin(){
+  const data=document.getElementById('excecaoDataAdmin')?.value;
+  const statusEl=document.getElementById('excecaoStatusAdmin');
+  const motivoEl=document.getElementById('excecaoMotivoAdmin');
+  const abrirBtn=document.getElementById('btnAbrirExcecaoAdmin');
+  const fecharBtn=document.getElementById('btnFecharExcecaoAdmin');
+  const restaurarBtn=document.getElementById('btnRestaurarExcecaoAdmin');
+  if(!data || !statusEl) return;
+  statusEl.textContent='⏳ Verificando '+nomeDiaAdmin(data)+'...';
+  motivoEl.textContent='';
+  if(abrirBtn) abrirBtn.disabled=true;
+  if(fecharBtn) fecharBtn.disabled=true;
+  if(restaurarBtn) restaurarBtn.disabled=true;
+  try{
+    const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:data});
+    const status=Array.isArray(resultado)?resultado[0]:resultado;
+    const excepcional=!!(status && status.excepcional);
+    const aberta=!!(status && status.aberta);
+    if(aberta){
+      statusEl.textContent=excepcional ? '🟢 Aberta excepcionalmente em '+nomeDiaAdmin(data)+'.' : '🟢 Aberta normalmente em '+nomeDiaAdmin(data)+'.';
+    }else{
+      statusEl.textContent=excepcional ? '🔴 Fechada excepcionalmente em '+nomeDiaAdmin(data)+'.' : '🔴 Fechada por padrão em '+nomeDiaAdmin(data)+'.';
+    }
+    motivoEl.textContent=status?.motivo ? 'Motivo: '+status.motivo : '';
+    const dow=diaSemanaAdmin(data);
+    if(abrirBtn) {
+      abrirBtn.disabled = (aberta && excepcional) || (!excepcional && dow!==0 && dow!==1);
+    }
+    if(fecharBtn) {
+      fecharBtn.disabled = !aberta || ((dow===0 || dow===1) && !excepcional);
+    }
+    if(restaurarBtn) restaurarBtn.disabled=!excepcional;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent='❌ Não foi possível verificar a data.';
+    if(abrirBtn) abrirBtn.disabled=false;
+    if(fecharBtn) fecharBtn.disabled=false;
+    if(restaurarBtn) restaurarBtn.disabled=false;
+  }
+}
+
+async function salvarExcecaoFuncionamentoAdmin(aberta,motivo){
+  const data=document.getElementById('excecaoDataAdmin')?.value;
+  const msg=document.getElementById('excecaoMensagemAdmin');
+  if(!data){
+    if(msg) msg.innerHTML='<div class="error">Escolha uma data.</div>';
+    return false;
+  }
+  const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
+  botoes.forEach(b=>{if(b)b.disabled=true;});
+  if(msg) msg.innerHTML='<div class="small">⏳ Salvando...</div>';
+  try{
+    const resultado=await chamarRPC('definir_excecao_funcionamento',{p_data:data,p_aberta:aberta,p_motivo:motivo||null});
+    if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou a alteração.');
+    if(msg) msg.innerHTML='<div class="success">✓ Alteração salva para '+nomeDiaAdmin(data)+'.</div>';
+    await carregarStatusExcecaoAdmin();
+    return true;
+  }catch(e){
+    console.error(e);
+    if(msg) msg.innerHTML='<div class="error">Não foi possível alterar o funcionamento desta data.</div>';
+    await carregarStatusExcecaoAdmin();
+    return false;
+  }
+}
+
+async function abrirDiaExcepcionalAdmin(){
+  const data=document.getElementById('excecaoDataAdmin')?.value;
+  if(!data) return carregarStatusExcecaoAdmin();
+  if(data < dataHojeAdmin()){
+    const msg=document.getElementById('excecaoMensagemAdmin');
+    if(msg) msg.innerHTML='<div class="error">Não é possível alterar uma data que já passou.</div>';
+    return;
+  }
+  const dow=diaSemanaAdmin(data);
+  const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:data});
+  const status=Array.isArray(resultado)?resultado[0]:resultado;
+  const excepcional=!!(status && status.excepcional);
+  const aberta=!!(status && status.aberta);
+  if(dow!==0 && dow!==1 && !excepcional){
+    const msg=document.getElementById('excecaoMensagemAdmin');
+    if(msg) msg.innerHTML='<div class="error">Este dia já funciona normalmente. Para terça a sábado, use esta opção apenas para reabrir um dia que foi fechado excepcionalmente.</div>';
+    return;
+  }
+  if(aberta && excepcional) return;
+  if(!confirm('Deseja abrir a barbearia em '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+'?')) return;
+  const motivo=prompt('Motivo (opcional):',dow===0 || dow===1 ? 'Abertura excepcional' : 'Reabertura excepcional');
+  if(motivo===null) return;
+  await salvarExcecaoFuncionamentoAdmin(true,motivo.trim() || (dow===0 || dow===1 ? 'Abertura excepcional' : 'Reabertura excepcional'));
+}
+
+async function fecharDiaExcepcionalAdmin(){
+  const data=document.getElementById('excecaoDataAdmin')?.value;
+  if(!data) return carregarStatusExcecaoAdmin();
+  if(data < dataHojeAdmin()){
+    const msg=document.getElementById('excecaoMensagemAdmin');
+    if(msg) msg.innerHTML='<div class="error">Não é possível alterar uma data que já passou.</div>';
+    return;
+  }
+  const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:data});
+  const status=Array.isArray(resultado)?resultado[0]:resultado;
+  const aberta=!!(status && status.aberta);
+  if(!aberta) return;
+  if(!confirm('Deseja fechar '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+' excepcionalmente?')) return;
+  const motivo=prompt('Informe o motivo do fechamento excepcional (opcional):','Fechamento excepcional');
+  if(motivo===null) return;
+  await salvarExcecaoFuncionamentoAdmin(false,motivo.trim() || 'Fechamento excepcional');
+}
+
+async function restaurarPadraoDiaAdmin(){
+  const data=document.getElementById('excecaoDataAdmin')?.value;
+  const msg=document.getElementById('excecaoMensagemAdmin');
+  if(!data) return;
+  if(!confirm('Restaurar o funcionamento padrão de '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+'?')) return;
+  const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
+  botoes.forEach(b=>{if(b)b.disabled=true;});
+  if(msg) msg.innerHTML='<div class="small">⏳ Restaurando...</div>';
+  try{
+    const resultado=await chamarRPC('remover_excecao_funcionamento',{p_data:data});
+    if(resultado!==true && resultado!=='true') throw new Error('Não foi possível restaurar o padrão.');
+    if(msg) msg.innerHTML='<div class="success">✓ Funcionamento padrão restaurado.</div>';
+    await carregarStatusExcecaoAdmin();
+  }catch(e){
+    console.error(e);
+    if(msg) msg.innerHTML='<div class="error">Não foi possível restaurar o padrão.</div>';
+    await carregarStatusExcecaoAdmin();
+  }
+}
+
+function iniciarControleExcecaoAdmin(){
+  const input=document.getElementById('excecaoDataAdmin');
+  if(!input) return;
+  input.value=hojeLocal();
+  input.min=dataHojeAdmin();
+  input.addEventListener('change',carregarStatusExcecaoAdmin);
+  carregarStatusExcecaoAdmin();
+}
+
+function dataHojeAdmin(){
+  const agora=new Date();
+  const y=agora.getFullYear();
+  const m=String(agora.getMonth()+1).padStart(2,'0');
+  const d=String(agora.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
 async function carregarStatusBarbearia(){
   const texto=document.getElementById('statusBarbeariaTexto');
   const motivo=document.getElementById('motivoBarbeariaTexto');
   const botao=document.getElementById('btnStatusBarbearia');
   try{
+    const hoje=dataHojeAdmin();
+    const dow=diaSemanaAdmin(hoje);
+
+    // Domingo e segunda: o controle do topo usa SOMENTE a exceção da data.
+    // O status global nunca deve aparecer como "aberto" nesses dias.
+    if(dow===0 || dow===1){
+      const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:hoje});
+      const status=Array.isArray(resultado)?resultado[0]:resultado;
+      const aberta=!!(status && status.aberta);
+      const excepcional=!!(status && status.excepcional);
+
+      texto.className='status-barbearia-sub '+(aberta?'status-aberta':'status-fechada');
+      texto.textContent=aberta
+        ? '🟢 Barbearia aberta para os clientes hoje'
+        : '🔴 Barbearia fechada para os clientes hoje';
+      motivo.textContent=status?.motivo ? 'Motivo: '+status.motivo : '';
+      botao.textContent=aberta ? '🔒 Fechar este dia' : '🟢 Abrir este dia';
+      botao.dataset.statusModo='excecao';
+      botao.dataset.dataHoje=hoje;
+      botao.dataset.excepcional=excepcional?'true':'false';
+      return;
+    }
+
+    // Terça a sábado: controle global normal.
     const data=await chamarRPC('obter_status_barbearia',{});
     const status=Array.isArray(data)?data[0]:data;
     const aberta=!!(status && status.aberta);
     texto.className='status-barbearia-sub '+(aberta?'status-aberta':'status-fechada');
-    texto.textContent=aberta?'🟢 Barbearia aberta':'🔴 Barbearia fechada';
+    texto.textContent=aberta
+      ? '🟢 Barbearia aberta para os clientes hoje'
+      : '🔴 Barbearia fechada para os clientes hoje';
     motivo.textContent=!aberta && status.motivo_fechamento ? 'Motivo: '+status.motivo_fechamento : '';
     botao.textContent=aberta?'🔒 Fechar barbearia':'🟢 Abrir barbearia';
+    botao.dataset.statusModo='global';
+    botao.dataset.dataHoje=hoje;
+    botao.dataset.excepcional='false';
   }catch(e){
     console.error(e);
-    texto.textContent='Não foi possível carregar o status.';
-    botao.textContent='Tentar novamente';
+    texto.textContent='Não foi possível carregar o status para os clientes.';
+    texto.className='status-barbearia-sub status-fechada';
+    motivo.textContent='';
+    botao.textContent='↻ Atualizar status';
   }
 }
-
 async function alternarStatusBarbearia(){
   const texto=document.getElementById('statusBarbeariaTexto');
   const botao=document.getElementById('btnStatusBarbearia');
+  const modo=botao.dataset.statusModo || 'global';
+  const hoje=botao.dataset.dataHoje || dataHojeAdmin();
   const fechada=texto.classList.contains('status-fechada');
+
+  if(modo==='excecao'){
+    botao.disabled=true;
+    try{
+      if(!fechada){
+        const motivo=prompt('Informe o motivo do fechamento excepcional de hoje:');
+        if(motivo===null) return;
+        if(!motivo.trim()){ mostrarMensagem('Informe o motivo do fechamento.','error'); return; }
+        const data=await chamarRPC('definir_excecao_funcionamento',{
+          p_data:hoje,
+          p_aberta:false,
+          p_motivo:motivo.trim()
+        });
+        if(data!==true) throw new Error('Não foi possível fechar este dia.');
+        mostrarMensagem('Hoje foi fechado para os clientes.','success');
+      }else{
+        const data=await chamarRPC('definir_excecao_funcionamento',{
+          p_data:hoje,
+          p_aberta:true,
+          p_motivo:'Aberta excepcionalmente hoje.'
+        });
+        if(data!==true) throw new Error('Não foi possível abrir este dia.');
+        mostrarMensagem('Hoje foi aberto excepcionalmente para os clientes.','success');
+      }
+      await carregarStatusBarbearia();
+      await new Promise(r=>setTimeout(r,100));
+      await carregarStatusBarbearia();
+      const input=document.getElementById('excecaoDataAdmin');
+      if(input && input.value===hoje) await carregarStatusExcecaoAdmin();
+    }catch(e){
+      console.error(e);
+      mostrarMensagem(e.message||'Não foi possível alterar o status de hoje.','error');
+    }finally{
+      botao.disabled=false;
+    }
+    return;
+  }
+
   if(!fechada){
     const motivo=prompt('Informe o motivo do fechamento:');
     if(motivo===null) return;
@@ -1020,60 +1511,182 @@ async function alternarStatusBarbearia(){
     try{
       const data=await chamarRPC('alterar_status_barbearia',{p_aberta:false,p_motivo:motivo.trim()});
       if(data!==true) throw new Error('Não foi possível fechar a barbearia.');
-      mostrarMensagem('Barbearia fechada com sucesso.','success');
+      mostrarMensagem('Barbearia fechada para os clientes.','success');
       await carregarStatusBarbearia();
     }catch(e){ console.error(e); mostrarMensagem('Não foi possível fechar a barbearia.','error'); }
     finally{ botao.disabled=false; }
   }else{
-    if(!confirm('Deseja abrir a barbearia novamente?')) return;
+    if(!confirm('Deseja abrir a barbearia novamente para os clientes?')) return;
     botao.disabled=true; botao.textContent='Abrindo...';
     try{
       const data=await chamarRPC('alterar_status_barbearia',{p_aberta:true,p_motivo:null});
       if(data!==true) throw new Error('Não foi possível abrir a barbearia.');
-      mostrarMensagem('Barbearia aberta com sucesso.','success');
+      mostrarMensagem('Barbearia aberta para os clientes.','success');
       await carregarStatusBarbearia();
     }catch(e){ console.error(e); mostrarMensagem('Não foi possível abrir a barbearia.','error'); }
     finally{ botao.disabled=false; }
   }
 }
 
-document.getElementById('data').value=hojeLocal();
-verPeriodo('dia');
-carregarFotoBarbeiro();
-carregarStatusBarbearia();
-carregarMensagensAdmin();
 </script>
 <script>
+async function carregarServicosAdmin(){
+  // Usa uma RPC protegida para não depender da política SELECT da tabela servicos.
+  // Isso resolve o problema em que o painel dizia "Nenhum serviço ativo encontrado" mesmo havendo serviços no Supabase.
+  const rows=await chamarRPC('listar_servicos_admin',{});
+  SERVICOS_ADMIN_CACHE=Array.isArray(rows)?rows:[];
+  PRECOS_SERVICOS_ADMIN={};
+  SERVICOS_ADMIN_CACHE.forEach(s=>{ PRECOS_SERVICOS_ADMIN[normalizarNomeServicoAdmin(s.nome)]=Number(s.preco||0); });
+  const select=document.getElementById('adminAgServico');
+  if(select){
+    select.innerHTML='<option value="">Selecione o serviço</option>'+SERVICOS_ADMIN_CACHE.map(s=>'<option value="'+escapeHtml(s.nome)+'">'+escapeHtml(s.nome)+' — '+formatarPrecoAdmin(s.preco)+'</option>').join('');
+  }
+  return SERVICOS_ADMIN_CACHE;
+}
+
+function formatarPrecoAdmin(valor){
+  return Number(valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+
+async function carregarPrecosAdmin(){
+  const lista=document.getElementById('precosAdminLista');
+  const msg=document.getElementById('precosAdminMensagem');
+  if(!lista) return;
+  lista.innerHTML='<div class="empty">⏳ Carregando serviços...</div>';
+  if(msg) msg.innerHTML='';
+  try{
+    const servicos=await carregarServicosAdmin();
+    if(!servicos.length){
+      lista.innerHTML='<div class="empty">Nenhum serviço ativo encontrado no Supabase.</div>';
+      return;
+    }
+    lista.innerHTML=servicos.map(s=>{
+      const valor=Number(s.preco||0);
+      return `<div class="card preco-admin-item" style="margin-bottom:10px;padding:14px" data-servico-id="${escapeHtml(s.id)}">
+        <div style="font-weight:900;font-size:17px">✂️ ${escapeHtml(s.nome)}</div>
+        <div class="small" style="margin:4px 0 10px">Preço atual: <b>${formatarPrecoAdmin(valor)}</b></div>
+        <div style="display:flex;gap:8px;align-items:end">
+          <div style="flex:1"><label style="display:block;font-size:12px;font-weight:800;margin-bottom:4px">NOVO PREÇO</label>
+            <div style="display:flex;align-items:center;border:1px solid #ccc;border-radius:10px;padding:0 10px;background:#fff">
+              <span style="font-weight:900">R$</span>
+              <input class="preco-admin-input" data-servico-id="${escapeHtml(s.id)}" data-servico-nome="${escapeHtml(s.nome)}" type="number" min="0" max="10000" step="0.01" value="${valor.toFixed(2)}" style="width:100%;border:0;outline:0;padding:12px;font-size:18px;font-weight:800;background:transparent;color:#111 !important;-webkit-text-fill-color:#111 !important;opacity:1 !important">
+            </div>
+          </div>
+          <button class="btn primary btn-salvar-preco-item" type="button" onclick="salvarPrecoItem(this)">💾 Salvar</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    console.error(e);
+    lista.innerHTML='<div class="empty">❌ Não foi possível carregar os serviços.</div>';
+    if(msg) msg.innerHTML='<div class="error">'+escapeHtml(e.message||'Erro ao carregar preços.')+'</div>';
+  }
+}
+
+async function salvarPrecoItem(botao){
+  const card=botao.closest('.preco-admin-item');
+  const input=card ? card.querySelector('.preco-admin-input') : null;
+  const msg=document.getElementById('precosAdminMensagem');
+  if(!input) return;
+  const nome=input.dataset.servicoNome||'serviço';
+  const valor=Number(String(input.value).replace(',','.'));
+  if(!Number.isFinite(valor) || valor<0 || valor>10000){
+    if(msg) msg.innerHTML='<div class="error">Informe um preço válido para '+escapeHtml(nome)+' entre R$ 0,00 e R$ 10.000,00.</div>';
+    return;
+  }
+  const valorAnterior=input.value;
+  botao.disabled=true; botao.textContent='⏳ Salvando...';
+  if(msg) msg.innerHTML='';
+  try{
+    const resultado=await chamarRPC('atualizar_preco_servico_admin',{
+      p_servico_id:input.dataset.servicoId,
+      p_preco:valor
+    });
+    if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou a alteração.');
+    await carregarServicosAdmin();
+    const atual=SERVICOS_ADMIN_CACHE.find(x=>String(x.id)===String(input.dataset.servicoId));
+    if(atual) input.value=Number(atual.preco||0).toFixed(2);
+    const sub=card.querySelector('.small');
+    if(sub && atual) sub.innerHTML='Preço atual: <b>'+formatarPrecoAdmin(atual.preco)+'</b>';
+    if(msg) msg.innerHTML='<div class="success">✅ Preço de '+escapeHtml(nome)+' alterado para <b>'+formatarPrecoAdmin(valor)+'</b>. O aplicativo do cliente já pode mostrar o novo valor.</div>';
+  }catch(e){
+    console.error(e);
+    input.value=valorAnterior;
+    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível alterar o preço de '+escapeHtml(nome)+'.<br>'+escapeHtml(e.message||'Erro desconhecido.')+'</div>';
+  }finally{
+    botao.disabled=false; botao.textContent='💾 Salvar';
+  }
+}
+
+// Mantém compatibilidade com qualquer botão antigo que ainda chame esta função.
+async function salvarPrecosAdmin(){
+  const primeiro=document.querySelector('.preco-admin-input');
+  if(!primeiro) return;
+  const botao=primeiro.closest('.preco-admin-item')?.querySelector('.btn-salvar-preco-item');
+  if(botao) await salvarPrecoItem(botao);
+}
+
+function atualizarMinDataAgendamentoAdmin(){
+  const input=document.getElementById('adminAgData');
+  if(input) input.min=hojeLocal();
+}
+
+function validarDataAgendamentoAdmin(){
+  const input=document.getElementById('adminAgData');
+  if(!input || !input.value) return true;
+  const hoje=hojeLocal();
+  if(input.value < hoje){
+    input.value=hoje;
+    const msg=document.getElementById('adminAgMensagem');
+    if(msg) msg.innerHTML='<div class="error">Esse dia já passou. O administrador só pode marcar clientes a partir de hoje.</div>';
+    return false;
+  }
+  return true;
+}
+
 function mostrarTelaAdmin(tela){
   const views={
     agenda:document.getElementById('viewAgenda'),
     financeiro:document.getElementById('viewFinanceiro'),
     mensagens:document.getElementById('viewMensagens'),
-    agendar:document.getElementById('viewAgendar')
+    agendar:document.getElementById('viewAgendar'),
+    conta:document.getElementById('viewConta'),
+    precos:document.getElementById('viewPrecos')
   };
   Object.values(views).forEach(v=>v&&v.classList.remove('active'));
   if(tela==='menu') return;
   if(views[tela]) views[tela].classList.add('active');
+  if(tela==='conta'){
+    carregarDadosContaAdmin();
+  }
+  if(tela==='precos'){
+    carregarPrecosAdmin();
+  }
   if(tela==='agendar'){
+    carregarServicosAdmin().catch(e=>console.error('Erro ao carregar serviços:',e));
     const d=document.getElementById('adminAgData');
-    if(d && !d.value) d.value=hojeLocal();
+    atualizarMinDataAgendamentoAdmin();
+    if(d && (!d.value || d.value < hojeLocal())) d.value=hojeLocal();
     atualizarHorariosAdmin();
   }
 }
 
 async function atualizarHorariosAdmin(){
   const sel=document.getElementById('adminAgHora');
-  const grid=document.getElementById('adminAgHorarios');
-  const selecionado=document.getElementById('adminAgHoraSelecionada');
   const dataInput=document.getElementById('adminAgData');
-  if(!sel || !grid) return;
+  if(!sel) return;
 
   const data=dataInput && dataInput.value ? dataInput.value : hojeLocal();
+  if(data < hojeLocal()){
+    if(dataInput) dataInput.value=hojeLocal();
+    return atualizarHorariosAdmin();
+  }
   const dia=new Date(data+'T12:00:00').getDay();
   const limite=dia===6 ? 23 : 20;
   const inicio=8*60;
   const fim=limite*60;
 
+  // Horários já ocupados no Supabase para a data escolhida.
   let ocupados=new Set();
   try{
     const rows=await chamarRPC('listar_horarios_ocupados',{p_data:data});
@@ -1092,40 +1705,23 @@ async function atualizarHorariosAdmin(){
 
   for(let m=inicio;m<=fim;m+=30){
     const h=Math.floor(m/60), mi=m%60;
+    // Mantém a pausa de almoço entre 11:30 e 14:00.
     if(m>11*60 && m<14*60) continue;
+
     const hh=String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');
     const passado=(data===hoje && m<=agoraMinutos);
     const ocupado=ocupados.has(hh);
     horarios.push({hh,passado,ocupado});
   }
 
-  sel.innerHTML='<option value="">Selecione o horário</option>'+horarios.map(x=>'<option value="'+x.hh+'" '+((x.ocupado||x.passado)?'disabled':'')+'>'+x.hh+'</option>').join('');
-  grid.innerHTML=horarios.map(x=>{
-    const classe=x.ocupado?'ocupado':(x.passado?'passado':'disponivel');
-    const disabled=(x.ocupado||x.passado)?'disabled':'';
-    const titulo=x.ocupado?'Ocupado':(x.passado?'Já passou':'Selecionar '+x.hh);
-    return '<button type="button" class="horario-btn '+classe+'" '+disabled+' title="'+titulo+'" onclick="selecionarHorarioAdmin(\''+x.hh+'\')">'+x.hh+'</button>';
+  sel.innerHTML='<option value="">Selecione o horário</option>'+horarios.map(x=>{
+    const indisponivel=x.ocupado || x.passado;
+    const texto=x.ocupado ? x.hh+' • Ocupado' : (x.passado ? x.hh+' • Já passou' : x.hh);
+    return '<option value="'+x.hh+'" '+(indisponivel?'disabled':'')+'>'+texto+'</option>';
   }).join('');
 
   const primeira=horarios.find(x=>!x.ocupado && !x.passado);
-  sel.value=primeira ? primeira.hh : '';
-  atualizarHorarioSelecionadoAdmin();
-}
-
-function selecionarHorarioAdmin(hora){
-  const sel=document.getElementById('adminAgHora');
-  if(!sel) return;
-  sel.value=hora;
-  atualizarHorarioSelecionadoAdmin();
-}
-
-function atualizarHorarioSelecionadoAdmin(){
-  const sel=document.getElementById('adminAgHora');
-  const box=document.getElementById('adminAgHoraSelecionada');
-  const grid=document.getElementById('adminAgHorarios');
-  if(!sel || !box || !grid) return;
-  box.textContent=sel.value ? '🕒 Horário escolhido: '+sel.value : 'Escolha um horário';
-  grid.querySelectorAll('.horario-btn').forEach(b=>b.classList.toggle('selecionado',b.textContent.trim()===sel.value));
+  if(primeira) sel.value=primeira.hh;
 }
 
 async function agendarClienteAdmin(){
@@ -1138,6 +1734,13 @@ async function agendarClienteAdmin(){
   const data=document.getElementById('adminAgData').value;
   const hora=document.getElementById('adminAgHora').value;
   const msg=document.getElementById('adminAgMensagem');
+  atualizarMinDataAgendamentoAdmin();
+  if(data < hojeLocal()){
+    msg.innerHTML='<div class="error">Esse dia já passou. Não é possível marcar cliente em uma data anterior a hoje.</div>';
+    document.getElementById('adminAgData').value=hojeLocal();
+    await atualizarHorariosAdmin();
+    return;
+  }
   const btn=document.getElementById('adminAgBtn');
   if(!nome||!telefone||telefoneDigitos.length<10||!data||!hora){
     msg.innerHTML='<div class="error">Preencha nome, telefone, data e horário. O telefone deve ter pelo menos 10 dígitos.</div>';
@@ -1190,17 +1793,21 @@ async function agendarClienteAdmin(){
 document.addEventListener('DOMContentLoaded',()=>{
   const d=document.getElementById('adminAgData');
   if(d){
+    atualizarMinDataAgendamentoAdmin();
     d.value=hojeLocal();
-    d.addEventListener('change',()=>atualizarHorariosAdmin());
+    d.addEventListener('change',()=>{
+      atualizarMinDataAgendamentoAdmin();
+      if(!validarDataAgendamentoAdmin()) return;
+      atualizarHorariosAdmin();
+    });
     atualizarHorariosAdmin();
   }
 });
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  if (typeof window.mostrarTelaAdmin === 'function') {
-    window.mostrarTelaAdmin('menu');
-  }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof window.mostrarTelaAdmin === 'function') window.mostrarTelaAdmin('menu');
+  await iniciarSegurancaAdmin();
 });
 </script>
 </body>
