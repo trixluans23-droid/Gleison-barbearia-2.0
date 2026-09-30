@@ -126,7 +126,7 @@ jobs:
           PY
 
       - name: Integrar lembrete nativo no Android
-        run: python3 scripts/integrate_native_reminder.py
+        run: python3 scripts/integrate_native_reminder.py # integração local do lembrete
 
       - name: Configurar Java
         uses: actions/setup-java@v4
