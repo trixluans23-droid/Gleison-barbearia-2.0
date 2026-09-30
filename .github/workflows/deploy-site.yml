@@ -650,6 +650,148 @@ jobs:
           print("Carregamento da Minha agenda corrigido.")
           PY
 
+      - name: Aplicar mesmas regras na agenda do administrador
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <style id="admin-agenda-regras-style">
+          .admin-atendimento-encerrado{border-color:rgba(220,53,69,.82)!important;box-shadow:0 0 0 2px rgba(220,53,69,.12) inset}
+          .admin-status-encerrado{background:#dc3545!important;color:#fff!important}
+          </style>
+          <script id="admin-agenda-regras-script">
+          (function(){
+            function norm(v){return (v||"").replace(/\s+/g," ").trim();}
+            function getDate(text){
+              var m=norm(text).match(/(\d{2})\/(\d{2})\/(\d{4})\s*[\u2022\u00b7]\s*(\d{2}):(\d{2})/);
+              if(!m)return null;
+              var d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],0,0);
+              return isNaN(d.getTime())?null:d;
+            }
+            function isAdminVisible(){
+              var body=norm(document.body.innerText).toLowerCase();
+              return body.includes("painel administrativo") ||
+                     body.includes("administração") ||
+                     body.includes("administrador") ||
+                     body.includes("agenda do administrador") ||
+                     body.includes("agenda administrativa");
+            }
+            function findCards(){
+              var dateNodes=Array.prototype.slice.call(document.querySelectorAll("body *")).filter(function(el){
+                return /(\d{2})\/(\d{2})\/(\d{4})\s*[\u2022\u00b7]\s*(\d{2}):(\d{2})/.test(norm(el.textContent));
+              });
+              var cards=[];
+              dateNodes.forEach(function(node){
+                var el=node;
+                for(var i=0;i<8 && el;i++,el=el.parentElement){
+                  var t=norm(el.innerText);
+                  if(getDate(t) && /Cliente\s*:/i.test(t) &&
+                     /(Agendado|Cancelado|Atendimento encerrado|Atendido|Não compareceu)/i.test(t)){
+                    var r=el.getBoundingClientRect();
+                    if(r.width>200 && r.height>70 && cards.indexOf(el)<0)cards.push(el);
+                    break;
+                  }
+                }
+              });
+              return cards;
+            }
+            function status(card){
+              var t=norm(card.innerText);
+              if(/\bAgendado\b/i.test(t))return 0;
+              if(/\bAtendimento encerrado\b/i.test(t))return 1;
+              if(/\bAtendido\b/i.test(t))return 2;
+              if(/\bNão compareceu\b/i.test(t))return 3;
+              if(/\bCancelado\b/i.test(t))return 4;
+              return 5;
+            }
+            function markPast(card){
+              var dt=getDate(card.innerText);
+              if(!dt || dt.getTime()>Date.now())return;
+              var t=norm(card.innerText);
+              if(/\bCancelado\b/i.test(t) || /\bAtendido\b/i.test(t) || /\bNão compareceu\b/i.test(t))return;
+              if(!/\bAgendado\b/i.test(t))return;
+
+              card.classList.add("admin-atendimento-encerrado");
+
+              var nodes=Array.prototype.slice.call(card.querySelectorAll("span,b,strong,p,div"));
+              var badge=nodes.find(function(el){
+                return /^Agendado$/i.test(norm(el.textContent));
+              });
+              if(badge){
+                badge.textContent="Atendimento encerrado";
+                badge.classList.add("admin-status-encerrado");
+              }
+            }
+            function sort(){
+              if(!isAdminVisible())return;
+              var cards=findCards();
+              cards.forEach(markPast);
+
+              var groups=[];
+              cards.forEach(function(card){
+                var parent=card.parentElement;
+                if(!parent)return;
+                var g=groups.find(function(x){return x.parent===parent;});
+                if(!g){g={parent:parent,cards:[]};groups.push(g);}
+                g.cards.push(card);
+              });
+
+              groups.forEach(function(g){
+                if(g.cards.length<2)return;
+                g.cards.sort(function(a,b){
+                  var sa=status(a), sb=status(b);
+                  if(sa!==sb)return sa-sb;
+                  var da=getDate(a.innerText), db=getDate(b.innerText);
+                  var ta=da?da.getTime():Number.MAX_SAFE_INTEGER;
+                  var tb=db?db.getTime():Number.MAX_SAFE_INTEGER;
+                  return ta-tb;
+                });
+                var frag=document.createDocumentFragment();
+                g.cards.forEach(function(card){frag.appendChild(card);});
+                g.parent.appendChild(frag);
+              });
+            }
+            function start(){
+              sort();
+              setTimeout(sort,500);
+              setTimeout(sort,1500);
+              setInterval(sort,30000);
+              new MutationObserver(function(){setTimeout(sort,100);}).observe(document.body,{childList:true,subtree:true});
+            }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
+            else start();
+          })();
+          </script>
+          '''
+          if 'id="admin-agenda-regras-script"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Regras da Minha agenda aplicadas também ao administrador.")
+          PY
+
+      - name: Validar regras do administrador
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("site/index.html").read_text(encoding="utf-8")
+          required=[
+            'id="admin-agenda-regras-script"',
+            'admin-atendimento-encerrado',
+            'admin-status-encerrado',
+            'Painel administrativo',
+            'Cancelado'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("Validação falhou; faltando: "+", ".join(missing))
+          if s.count('id="admin-agenda-regras-script"') != 1:
+              raise SystemExit("Script do administrador duplicado.")
+          print("Validação das regras do administrador OK.")
+          PY
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
