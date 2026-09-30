@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'GleisonBarbearia_2.0_V27_FCM.zip'
+      - 'admin.html'
       - '.github/workflows/deploy-site.yml'
 
 permissions:
