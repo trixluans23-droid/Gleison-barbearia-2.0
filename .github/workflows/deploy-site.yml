@@ -39,23 +39,6 @@ jobs:
 
           echo "Sistema preparado para publicação."
 
-      - name: Marcar teste de atualização online
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path("site/index.html")
-          s = p.read_text(encoding="utf-8")
-
-          badge = '<div id="online-test-badge" style="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:6px 12px;border-radius:999px;background:#16a34a;color:#ffffff;font:700 12px Arial;box-shadow:0 2px 8px rgba(0,0,0,.3)">TESTE ONLINE ATUALIZADO</div>'
-
-          if "<body>" in s and "TESTE ONLINE ATUALIZADO" not in s:
-              s = s.replace("<body>", "<body>" + badge, 1)
-              p.write_text(s, encoding="utf-8")
-
-          print("Teste de atualização online preparado.")
-          PY
-
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
