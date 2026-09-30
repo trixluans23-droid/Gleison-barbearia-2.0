@@ -23,8 +23,7 @@ jobs:
         run: |
           # O APK deve abrir o mesmo sistema completo que está publicado no GitHub Pages.
           # Isso preserva agenda, perfil, histórico, menu de três pontos e acesso ao administrador.
-          curl -fsSL "https://trixluans23-droid.github.io/Gleison-barbearia-2.0/" \\
-            -o GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          curl -fsSL "https://trixluans23-droid.github.io/Gleison-barbearia-2.0/" -o GleisonBarbeariaAndroid/app/src/main/assets/index.html
           cp admin.html GleisonBarbeariaAndroid/app/src/main/assets/admin.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/index.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/admin.html
