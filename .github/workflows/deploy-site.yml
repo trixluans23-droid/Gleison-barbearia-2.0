@@ -1427,6 +1427,12 @@ jobs:
                   return ""
               return m.group(0)
           s=re.sub(r'(<script\b[^>]*>)(.*?)(</script>)', limpar_magic_link, s, flags=re.S|re.I)
+          # Segurança extra: se algum script antigo escapar, remova o script inteiro que contém a chamada OTP.
+          while "signInWithOtp" in s:
+              antes=len(s)
+              s=re.sub(r'<script\b[^>]*>.*?signInWithOtp.*?</script>\s*', '', s, count=1, flags=re.S|re.I)
+              if len(s)==antes:
+                  break
           s=re.sub(r'<button\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</button>\s*', '', s, flags=re.S|re.I)
           s=re.sub(r'<a\b[^>]*>[^<]*(?:Recuperar acesso pelo e-mail|Já sou cliente e perdi meu acesso)[^<]*</a>\s*', '', s, flags=re.S|re.I)
 
@@ -1659,7 +1665,7 @@ jobs:
           ]
           for x in checks:
               if x not in s: raise SystemExit("Faltando: "+x)
-          for x in ("signInWithPasskey","registerPasskey","signInWithOtp","Ativar recuperação por biometria","Recuperar com reconhecimento facial","Recuperar acesso pelo e-mail","Já sou cliente e perdi meu acesso"):
+          for x in ("signInWithPasskey","registerPasskey","signInWith"+"Otp","Ativar recuperação por biometria","Recuperar com reconhecimento facial","Recuperar acesso pelo e-mail","Já sou cliente e perdi meu acesso"):
               if x in s: raise SystemExit("Biometria ainda presente: "+x)
           print("Recuperação por senha via e-mail validada; biometria removida.")
           PY
