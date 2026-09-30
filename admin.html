@@ -314,7 +314,7 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
   </div>
   <div class="resumo-dia-atualizado" id="resumoDiaAtualizado">Carregando resumo...</div>
 </div>
-<div class="admin-menu"><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agendar')" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('agenda')" type="button">📋 Agenda</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('financeiro')" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('mensagens')" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('conta')" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" onclick="abrirTelaAdminCheia('precos')" type="button">💲 Preços</button></div>
+<div class="admin-menu"><button class="btn admin-menu-btn" data-admin-tela="agendar" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" data-admin-tela="agenda" type="button">📋 Agenda</button><button class="btn admin-menu-btn" data-admin-tela="financeiro" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" data-admin-tela="mensagens" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" data-admin-tela="conta" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" data-admin-tela="precos" type="button">💲 Preços</button></div>
 
 <section class="section admin-view" id="viewNotificacoes">
 <button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button>
@@ -2501,6 +2501,25 @@ window.carregarCalendarioAgendaAdmin=async function(){
 document.addEventListener('DOMContentLoaded',()=>{setTimeout(carregarCalendarioAgendaAdmin,300);});
 })();
 </script>
+</script>
+
+<script>
+// Compatibilidade dos botões principais no celular: navegação por eventos explícitos.
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.admin-menu-btn[data-admin-tela]').forEach(function(botao){
+    botao.style.touchAction='manipulation';
+    botao.style.cursor='pointer';
+    botao.addEventListener('click', function(event){
+      event.preventDefault();
+      const tela=botao.getAttribute('data-admin-tela');
+      if(typeof window.abrirTelaAdminCheia==='function'){
+        window.abrirTelaAdminCheia(tela);
+      }else if(typeof window.mostrarTelaAdmin==='function'){
+        window.mostrarTelaAdmin(tela);
+      }
+    }, {passive:false});
+  });
+});
 </script>
 </body>
 </html>
