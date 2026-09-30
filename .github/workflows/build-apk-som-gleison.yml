@@ -19,6 +19,18 @@ jobs:
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
           test -f GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java
 
+      - name: Colocar sistema completo no APK
+        run: |
+          # O APK deve abrir o mesmo sistema completo que está publicado no GitHub Pages.
+          # Isso preserva agenda, perfil, histórico, menu de três pontos e acesso ao administrador.
+          curl -fsSL "https://trixluans23-droid.github.io/Gleison-barbearia-2.0/" \\
+            -o GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          cp admin.html GleisonBarbeariaAndroid/app/src/main/assets/admin.html
+          test -s GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          test -s GleisonBarbeariaAndroid/app/src/main/assets/admin.html
+          grep -q "Gleison Barbearia" GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          echo "Sistema completo e admin preparados para o APK."
+
       - name: Instalar FFmpeg
         run: |
           sudo apt-get update
