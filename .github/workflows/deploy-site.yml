@@ -1407,6 +1407,270 @@ jobs:
           print("Cores dos status da agenda forçadas.")
           PY
 
+      - name: Recuperação por biometria do celular
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.109.0"></script>
+          <style id="reconhecimento-biometrico-online-style">
+          #gc-biometria-btn,#gc-biometria-perfil-btn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:10px;border:1px solid rgba(242,193,78,.42);border-radius:12px;padding:13px 14px;background:#171c20;color:#f2c14e;font:800 15px Arial,sans-serif;cursor:pointer}
+          #gc-biometria-btn:active,#gc-biometria-perfil-btn:active{transform:scale(.98)}
+          #gc-biometria-btn:disabled,#gc-biometria-perfil-btn:disabled{opacity:.55;cursor:wait}
+          </style>
+          <script id="reconhecimento-biometrico-online-script">
+          (function(){
+            var URL="https://qumwaizimhlucnqyshbu.supabase.co";
+            var KEY="sb_publishable_9JkI1dljRX-vBQ5iNWFQMQ_AlBZupZ8";
+            var FLAG="gleison_ativar_biometria";
+            var client=null;
+
+            function init(){
+              try{
+                if(!window.supabase || typeof window.supabase.createClient!=="function") return null;
+                client=window.supabase.createClient(URL,KEY,{
+                  auth:{experimental:{passkey:true}}
+                });
+                return client;
+              }catch(e){
+                console.error("Biometria: erro ao iniciar cliente Supabase",e);
+                return null;
+              }
+            }
+
+            function c(){return client||init();}
+            function digits(v){return String(v||"").replace(/\D/g,"");}
+            function saved(){
+              return {
+                nome:(localStorage.getItem("gleison_nome")||"").trim(),
+                telefone:(localStorage.getItem("gleison_telefone")||"").trim(),
+                email:(localStorage.getItem("gleison_email")||"").trim()
+              };
+            }
+            function save(v){
+              if(v.nome!=null)localStorage.setItem("gleison_nome",v.nome);
+              if(v.telefone!=null)localStorage.setItem("gleison_telefone",v.telefone);
+              if(v.email!=null)localStorage.setItem("gleison_email",v.email);
+            }
+            function msg(texto,tipo){
+              var ids=["gc-cadastro-msg","gc-perfil-msg","gc-recuperacao-msg"];
+              var el=null;
+              for(var i=0;i<ids.length;i++){
+                var x=document.getElementById(ids[i]);
+                if(x && (x.offsetParent!==null || x.closest(".aberto"))){el=x;break;}
+              }
+              if(el){
+                el.textContent=texto||"";
+                el.className=tipo==="erro"?"gc-erro":(tipo==="ok"?"gc-ok":"gc-info");
+              }else if(texto){
+                alert(texto);
+              }
+            }
+            function suportado(){
+              return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get);
+            }
+            async function recuperarComBiometria(){
+              if(!suportado()){
+                msg("Este celular/navegador não oferece biometria por passkey. Use o e-mail para recuperar sua conta.","erro");
+                return;
+              }
+              var b=document.getElementById("gc-biometria-btn");
+              if(b){b.disabled=true;b.textContent="🔐 Verificando...";}
+              try{
+                var sb=c();
+                if(!sb || !sb.auth || typeof sb.auth.signInWithPasskey!=="function"){
+                  throw new Error("O navegador ainda não carregou o suporte de passkey.");
+                }
+                var r=await sb.auth.signInWithPasskey();
+                if(r.error)throw r.error;
+
+                var conta=await sb.rpc("recuperar_conta_cliente_logado");
+                if(conta.error)throw conta.error;
+                var dados=Array.isArray(conta.data)?(conta.data[0]||null):conta.data;
+                if(!dados)throw new Error("Não encontramos um cadastro de cliente para esta conta.");
+
+                save({
+                  nome:dados.nome||"",
+                  telefone:dados.telefone||"",
+                  email:dados.email||""
+                });
+                await sb.auth.signOut({scope:"local"});
+                window.location.replace(window.location.pathname+"?biometria_recuperada="+Date.now());
+              }catch(e){
+                console.error("Biometria recuperação:",e);
+                var m=String(e && (e.message||e.error_description||e.code)||e);
+                if(/cancel|abort/i.test(m)) m="Operação cancelada.";
+                else if(/passkey_disabled/i.test(m)) m="A biometria ainda não foi ativada no sistema. Use o e-mail por enquanto.";
+                else if(/credential|not.?found|webauthn/i.test(m)) m="Nenhuma biometria cadastrada para esta conta neste dispositivo.";
+                msg(m,"erro");
+              }finally{
+                if(b){b.disabled=false;b.textContent="🔐 Recuperar com reconhecimento facial";}
+              }
+            }
+
+            async function ativarBiometria(){
+              if(!suportado()){
+                msg("Este celular/navegador não oferece biometria por passkey.","erro");
+                return;
+              }
+              var cads=saved();
+              if(!cads.email){
+                msg("Cadastre um e-mail no seu perfil antes de ativar a recuperação por biometria.","erro");
+                return;
+              }
+              var b=document.getElementById("gc-biometria-perfil-btn");
+              if(b){b.disabled=true;b.textContent="📧 Enviando confirmação...";}
+              try{
+                var sb=c();
+                if(!sb)throw new Error("Sistema de autenticação ainda está carregando.");
+                var sess=await sb.auth.getSession();
+                if(sess.error)throw sess.error;
+
+                if(sess.data && sess.data.session){
+                  await registrarPasskey(sb,b);
+                  return;
+                }
+
+                localStorage.setItem(FLAG,"1");
+                var redirectTo=window.location.origin+window.location.pathname;
+                var r=await sb.auth.signInWithOtp({
+                  email:cads.email,
+                  options:{
+                    shouldCreateUser:true,
+                    emailRedirectTo:redirectTo
+                  }
+                });
+                if(r.error)throw r.error;
+                msg("Enviamos um link para seu e-mail. Abra o link no mesmo celular para concluir o cadastro da biometria.","ok");
+              }catch(e){
+                console.error("Biometria ativação:",e);
+                msg(String(e && (e.message||e.error_description)||e),"erro");
+              }finally{
+                if(b){b.disabled=false;b.textContent="🔐 Ativar recuperação por biometria";}
+              }
+            }
+
+            async function registrarPasskey(sb,b){
+              if(b){b.disabled=true;b.textContent="🙂 Confirme no celular...";}
+              try{
+                if(!sb || typeof sb.auth.registerPasskey!=="function"){
+                  throw new Error("Suporte a passkey indisponível nesta versão.");
+                }
+                var r=await sb.auth.registerPasskey();
+                if(r.error)throw r.error;
+                localStorage.removeItem(FLAG);
+                await sb.auth.signOut({scope:"local"});
+                msg("Reconhecimento facial/biometria ativado com sucesso. Agora você poderá recuperar sua conta sem digitar o telefone.","ok");
+              }catch(e){
+                console.error("Biometria cadastro:",e);
+                var m=String(e && (e.message||e.error_description||e.code)||e);
+                if(/cancel|abort/i.test(m))m="Cadastro da biometria cancelado.";
+                else if(/passkey_disabled/i.test(m))m="A biometria ainda precisa ser ativada no Supabase.";
+                msg(m,"erro");
+              }finally{
+                if(b){b.disabled=false;b.textContent="🔐 Ativar recuperação por biometria";}
+              }
+            }
+
+            function adicionarBotoes(){
+              var recOverlay=document.getElementById("gc-recuperacao-overlay");
+              if(recOverlay && !document.getElementById("gc-biometria-btn")){
+                var box=recOverlay.querySelector(".gc-modal");
+                if(box){
+                  var b=document.createElement("button");
+                  b.id="gc-biometria-btn";
+                  b.type="button";
+                  b.textContent="🔐 Recuperar com reconhecimento facial";
+                  b.addEventListener("click",recuperarComBiometria);
+                  var acoes=box.querySelector(".gc-acoes");
+                  if(acoes)box.insertBefore(b,acoes);
+                  else box.appendChild(b);
+                }
+              }
+
+              var perfilOverlay=document.getElementById("gc-perfil-overlay");
+              if(perfilOverlay && !document.getElementById("gc-biometria-perfil-btn")){
+                var box2=perfilOverlay.querySelector(".gc-modal");
+                if(box2){
+                  var b2=document.createElement("button");
+                  b2.id="gc-biometria-perfil-btn";
+                  b2.type="button";
+                  b2.textContent="🔐 Ativar recuperação por biometria";
+                  b2.addEventListener("click",ativarBiometria);
+                  var acoes2=box2.querySelector(".gc-acoes");
+                  if(acoes2)box2.insertBefore(b2,acoes2);
+                  else box2.appendChild(b2);
+                }
+              }
+            }
+
+            async function concluirAtivacaoPendente(){
+              if(localStorage.getItem(FLAG)!=="1")return;
+              var sb=c();
+              if(!sb)return;
+              try{
+                var sess=await sb.auth.getSession();
+                if(!(sess.data&&sess.data.session))return;
+                localStorage.removeItem(FLAG);
+                var b=document.getElementById("gc-biometria-perfil-btn");
+                await registrarPasskey(sb,b);
+              }catch(e){
+                console.error("Biometria retorno:",e);
+              }
+            }
+
+            function limparParametros(){
+              if(/[?#].*biometria_(recuperada|ativada)/.test(window.location.search+window.location.hash)){
+                try{history.replaceState({},document.title,window.location.pathname);}catch(e){}
+              }
+            }
+
+            function start(){
+              init();
+              adicionarBotoes();
+              setTimeout(adicionarBotoes,500);
+              setTimeout(adicionarBotoes,1500);
+              concluirAtivacaoPendente();
+              limparParametros();
+              new MutationObserver(function(){adicionarBotoes();}).observe(document.body,{childList:true,subtree:true});
+            }
+
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
+            else start();
+          })();
+          </script>
+          '''
+
+          if 'id="reconhecimento-biometrico-online-script"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"\n</body>",1)
+
+          p.write_text(s,encoding="utf-8")
+          print("Recuperação por biometria do celular adicionada.")
+          PY
+
+      - name: Validar recuperação por biometria
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("site/index.html").read_text(encoding="utf-8")
+          required=[
+            'id="reconhecimento-biometrico-online-script"',
+            'auth.signInWithPasskey',
+            'auth.registerPasskey',
+            'recuperar_conta_cliente_logado',
+            'Ativar recuperação por biometria',
+            'Recuperar com reconhecimento facial'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("Validação falhou; faltando: "+", ".join(missing))
+          print("Recuperação por biometria validada.")
+          PY
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
