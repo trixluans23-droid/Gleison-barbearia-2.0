@@ -58,6 +58,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.net.Uri;
+import android.media.RingtoneManager;
 import android.os.Build;
 
 public class GleisonReminderReceiver extends BroadcastReceiver {
@@ -65,7 +66,7 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
 
     @Override public void onReceive(Context context, Intent received) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.gleison_notificacao);
+        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Lembretes Gleison Barbearia", NotificationManager.IMPORTANCE_HIGH);
             AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
