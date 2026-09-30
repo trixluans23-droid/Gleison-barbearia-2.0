@@ -40,8 +40,13 @@ public class GleisonAndroidBridge {
             PendingIntent pi = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (am != null) {
-                if (android.os.Build.VERSION.SDK_INT >= 23) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
-                else am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
+                if (android.os.Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) return;
+                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                    AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(trigger, pi);
+                    am.setAlarmClock(info, pi);
+                } else {
+                    am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
+                }
             }
         } catch (Exception ignored) {}
     }
