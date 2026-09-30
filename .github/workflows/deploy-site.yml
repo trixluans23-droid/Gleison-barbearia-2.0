@@ -411,11 +411,12 @@ jobs:
 
             function status(card){
               var t=norm(card.innerText);
+              // Ordem dos grupos: agendados, atendidos, cancelados.
               if(/\bAgendado\b/i.test(t))return 0;
-              if(/\bAtendimento encerrado\b/i.test(t))return 1;
-              if(/\bAtendido\b/i.test(t))return 2;
-              if(/\bNão compareceu\b/i.test(t))return 3;
-              if(/\bCancelado\b/i.test(t))return 4;
+              if(/\bAtendido\b/i.test(t))return 1;
+              if(/\bCancelado\b/i.test(t))return 2;
+              if(/\bAtendimento encerrado\b/i.test(t))return 3;
+              if(/\bNão compareceu\b/i.test(t))return 4;
               return 5;
             }
 
