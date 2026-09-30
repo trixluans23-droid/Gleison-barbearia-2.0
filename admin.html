@@ -900,7 +900,13 @@ async function carregarAgenda(){
     }
 
     atualizarResumo(rows);
-    const rowsVisiveis = mostrarHistorico ? rows : rows.filter(a => !['cancelado','faltou'].includes(a.status));
+    const rowsVisiveis = (mostrarHistorico ? rows : rows.filter(a => !['cancelado','faltou'].includes(a.status))).slice().sort((a,b)=>{ 
+      const prioridade={agendado:0, confirmado:1, atendido:2, cancelado:3, faltou:4};
+      const pa=prioridade[String(a.status||'agendado').toLowerCase()] ?? 9;
+      const pb=prioridade[String(b.status||'agendado').toLowerCase()] ?? 9;
+      if(pa!==pb) return pa-pb;
+      return new Date(a.data_hora).getTime()-new Date(b.data_hora).getTime();
+    });
 
     if(!rowsVisiveis.length){
       lista.innerHTML='<div class="card empty">Nenhum horário ativo para esta data.</div>';
