@@ -791,6 +791,13 @@ jobs:
           print("Validação das regras do administrador OK.")
           PY
 
+      - name: Investigar área administrativa do projeto
+        run: |
+          echo "=== ARQUIVOS DO PROJETO ==="
+          find GleisonBarbeariaAndroid/app/src/main/assets -maxdepth 2 -type f -print | sort
+          echo "=== TERMOS ADMINISTRATIVOS NO CÓDIGO ==="
+          grep -RniE "admin|administr|painel|senha|password|gestor" GleisonBarbeariaAndroid/app/src/main/assets --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' | head -200 || true
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
