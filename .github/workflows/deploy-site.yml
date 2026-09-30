@@ -484,6 +484,235 @@ jobs:
           print("Cadastro único do cliente adicionado.")
           PY
 
+      - name: Recuperação de conta do cliente
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <style id="recuperacao-conta-cliente-style">
+          #gc-recuperacao-overlay{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72)}
+          #gc-recuperacao-overlay.aberto{display:flex}
+          .gc-rec-modal{width:min(430px,100%);max-height:90vh;overflow:auto;background:#11161a;color:#fff;border:1px solid rgba(242,193,78,.35);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.65);padding:22px}
+          .gc-rec-modal h2{margin:0 0 8px;color:#f2c14e;font:800 24px Arial,sans-serif}
+          .gc-rec-modal p{margin:0 0 18px;color:#c7ccd2;font:400 14px/1.45 Arial,sans-serif}
+          .gc-rec-modal label{display:block;margin:12px 0 6px;color:#fff;font:700 13px Arial,sans-serif}
+          .gc-rec-modal input{box-sizing:border-box;width:100%;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#171c20;color:#fff;padding:13px 14px;font:600 16px Arial,sans-serif;outline:none}
+          .gc-rec-modal input:focus{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.12)}
+          .gc-rec-modal .gc-rec-acoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+          .gc-rec-modal button{border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:13px 14px;background:#171c20;color:#fff;font:800 15px Arial,sans-serif;cursor:pointer}
+          .gc-rec-modal button.gc-rec-principal{background:#f2c14e;color:#171717;border-color:#f2c14e}
+          .gc-rec-modal button:disabled{opacity:.55;cursor:wait}
+          #gc-recuperacao-msg{min-height:18px;margin-top:10px;font:600 13px Arial,sans-serif}
+          .gc-rec-ok{color:#4dcc83}.gc-rec-erro{color:#ff667a}.gc-rec-info{color:#c7ccd2}
+          .gc-rec-link{display:block;width:100%;margin-top:12px;padding:10px 4px;background:transparent!important;border:0!important;color:#f2c14e!important;font:700 13px Arial,sans-serif!important;text-align:center;cursor:pointer}
+          </style>
+
+          <div id="gc-recuperacao-overlay" aria-hidden="true">
+            <div class="gc-rec-modal" role="dialog" aria-modal="true" aria-labelledby="gc-recuperacao-titulo">
+              <h2 id="gc-recuperacao-titulo">🔐 Recuperar minha conta</h2>
+              <p>Perdeu o celular ou o número? Informe o e-mail que estava cadastrado. Enviaremos um link seguro para recuperar seu cadastro.</p>
+              <label for="gc-recuperacao-email">E-mail cadastrado</label>
+              <input id="gc-recuperacao-email" type="email" maxlength="160" autocomplete="email" placeholder="seuemail@exemplo.com">
+              <div id="gc-recuperacao-msg"></div>
+              <div class="gc-rec-acoes">
+                <button type="button" id="gc-recuperacao-fechar">Fechar</button>
+                <button type="button" class="gc-rec-principal" id="gc-recuperacao-enviar">Enviar link</button>
+              </div>
+            </div>
+          </div>
+
+          <script id="recuperacao-conta-cliente-script">
+          (function(){
+            var PHONE_KEY="gleison_telefone";
+            var NAME_KEY="gleison_nome";
+            var EMAIL_KEY="gleison_email";
+
+            function getSB(){
+              try{
+                if(typeof supabaseClient!=="undefined" && supabaseClient) return supabaseClient;
+              }catch(e){}
+              return window.supabaseClient||null;
+            }
+            function digits(v){return String(v||"").replace(/\D/g,"");}
+            function fmtPhone(v){
+              var d=digits(v).slice(0,11);
+              if(d.length<=2)return d;
+              if(d.length<=7)return "("+d.slice(0,2)+") "+d.slice(2);
+              return "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
+            }
+            function saveLocal(c){
+              try{
+                localStorage.setItem(NAME_KEY,c.nome||"");
+                localStorage.setItem(PHONE_KEY,c.telefone||"");
+                localStorage.setItem(EMAIL_KEY,c.email||"");
+              }catch(e){}
+            }
+            function setMsg(text,cls){
+              var el=document.getElementById("gc-recuperacao-msg");
+              if(el){el.textContent=text||"";el.className=cls||"gc-rec-info";}
+            }
+            function abrir(){
+              var el=document.getElementById("gc-recuperacao-overlay");
+              if(el){el.classList.add("aberto");el.setAttribute("aria-hidden","false");}
+              var inp=document.getElementById("gc-recuperacao-email");
+              if(inp){inp.value=(localStorage.getItem(EMAIL_KEY)||"");setTimeout(function(){inp.focus();},80);}
+              setMsg("","");
+            }
+            function fechar(){
+              var el=document.getElementById("gc-recuperacao-overlay");
+              if(el){el.classList.remove("aberto");el.setAttribute("aria-hidden","true");}
+            }
+
+            async function concluirRecuperacao(){
+              var sb=getSB();
+              if(!sb || !sb.auth)return;
+              try{
+                var sess=await sb.auth.getSession();
+                var session=sess && sess.data ? sess.data.session : null;
+                if(!session || !session.user || !session.user.email)return;
+
+                var r=await sb.rpc("recuperar_conta_cliente_logado");
+                if(r.error)throw r.error;
+                var c=Array.isArray(r.data)?(r.data[0]||null):r.data;
+                if(!c)throw new Error("Não encontramos um cadastro de cliente com este e-mail.");
+
+                saveLocal({
+                  nome:c.nome||"",
+                  telefone:c.telefone||"",
+                  email:c.email||session.user.email
+                });
+
+                fechar();
+                var cadastro=document.getElementById("gc-cadastro-overlay");
+                if(cadastro){cadastro.classList.remove("aberto");cadastro.setAttribute("aria-hidden","true");}
+
+                if(typeof window.location!=="undefined"){
+                  window.location.replace(window.location.pathname+"?recuperado="+Date.now());
+                }
+              }catch(e){
+                console.error("Recuperação de conta:",e);
+                setMsg(e.message||"Não foi possível recuperar sua conta.","gc-rec-erro");
+                try{await sb.auth.signOut();}catch(_){}
+              }
+            }
+
+            async function enviarLink(){
+              var btn=document.getElementById("gc-recuperacao-enviar");
+              var email=(document.getElementById("gc-recuperacao-email")||{}).value||"";
+              email=email.trim().toLowerCase();
+              if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+                setMsg("Digite um e-mail válido.","gc-rec-erro");
+                return;
+              }
+              var sb=getSB();
+              if(!sb || !sb.auth){
+                setMsg("Sistema ainda está carregando. Tente novamente.","gc-rec-erro");
+                return;
+              }
+              btn.disabled=true;
+              setMsg("Enviando o link de recuperação...","gc-rec-info");
+              try{
+                var redirectTo=window.location.href.split("#")[0].split("?")[0];
+                var r=await sb.auth.signInWithOtp({
+                  email:email,
+                  options:{
+                    shouldCreateUser:true,
+                    emailRedirectTo:redirectTo
+                  }
+                });
+                if(r.error)throw r.error;
+                setMsg("Link enviado. Abra o e-mail e toque no link para recuperar sua conta.","gc-rec-ok");
+                btn.disabled=false;
+              }catch(e){
+                console.error("Envio de recuperação:",e);
+                setMsg(e.message||"Não foi possível enviar o link. Verifique o e-mail e tente novamente.","gc-rec-erro");
+                btn.disabled=false;
+              }
+            }
+
+            function adicionarLinkRecuperacao(){
+              var cadastro=document.getElementById("gc-cadastro-overlay");
+              if(cadastro && !document.getElementById("gc-abrir-recuperacao-cadastro")){
+                var b=document.createElement("button");
+                b.id="gc-abrir-recuperacao-cadastro";
+                b.type="button";
+                b.className="gc-rec-link";
+                b.textContent="🔐 Já sou cliente e perdi meu acesso";
+                b.addEventListener("click",function(){abrir();});
+                var acoes=cadastro.querySelector(".gc-acoes");
+                if(acoes)acoes.parentNode.appendChild(b);
+              }
+
+              var perfil=document.querySelector("#gc-perfil-overlay .gc-acoes");
+              if(perfil && !document.getElementById("gc-abrir-recuperacao-perfil")){
+                var b2=document.createElement("button");
+                b2.id="gc-abrir-recuperacao-perfil";
+                b2.type="button";
+                b2.className="gc-rec-link";
+                b2.textContent="🔐 Recuperar acesso pelo e-mail";
+                b2.addEventListener("click",function(){abrir();});
+                perfil.parentNode.appendChild(b2);
+              }
+            }
+
+            function ligar(){
+              var enviar=document.getElementById("gc-recuperacao-enviar");
+              if(enviar)enviar.addEventListener("click",enviarLink);
+              var fecharBtn=document.getElementById("gc-recuperacao-fechar");
+              if(fecharBtn)fecharBtn.addEventListener("click",fechar);
+              var ov=document.getElementById("gc-recuperacao-overlay");
+              if(ov)ov.addEventListener("click",function(e){if(e.target===ov)fechar();});
+              adicionarLinkRecuperacao();
+
+              var sb=getSB();
+              if(sb && sb.auth){
+                sb.auth.onAuthStateChange(function(event){
+                  if(event==="SIGNED_IN" || event==="INITIAL_SESSION"){
+                    setTimeout(concluirRecuperacao,250);
+                  }
+                });
+                setTimeout(concluirRecuperacao,700);
+              }
+            }
+
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",function(){setTimeout(ligar,700);});
+            }else{
+              setTimeout(ligar,700);
+            }
+          })();
+          </script>
+          '''
+
+          if 'id="recuperacao-conta-cliente-style"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+
+          p.write_text(s,encoding="utf-8")
+          print("Recuperação de conta do cliente adicionada.")
+          PY
+
+      - name: Validar recuperação de conta
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("site/index.html").read_text(encoding="utf-8")
+          required=[
+            'id="recuperacao-conta-cliente-style"',
+            'id="gc-recuperacao-overlay"',
+            'signInWithOtp',
+            'recuperar_conta_cliente_logado',
+            'Já sou cliente e perdi meu acesso'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("Validação falhou; faltando: "+", ".join(missing))
+          print("Validação da recuperação de conta OK.")
+          PY
+
       - name: Marcar atendimentos encerrados
         run: |
           python3 - <<'PY'
