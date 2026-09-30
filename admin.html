@@ -346,7 +346,8 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div class="toolbar">
 <div>
 <label for="data">Data da agenda</label>
-<input id="data" type="date" onchange="carregarAgenda()"/>
+<input id="data" type="date" onchange="atualizarDataExataAgendaAdmin();carregarAgenda()"/>
+<div id="dataExataAgendaAdmin" class="small" style="margin-top:7px;font-weight:900"></div>
 </div>
 <button class="btn" onclick="carregarAgenda()">↻ Atualizar agenda</button>
 </div>
@@ -706,6 +707,15 @@ function formatarDataHora(v){
   if(Number.isNaN(d.getTime())) return v || '';
   return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})
     +' • '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function atualizarDataExataAgendaAdmin(){
+  const input=document.getElementById('data');
+  const alvo=document.getElementById('dataExataAgendaAdmin');
+  if(!input || !alvo) return;
+  if(!input.value){ alvo.textContent=''; return; }
+  const partes=input.value.split('-');
+  if(partes.length!==3){ alvo.textContent=''; return; }
+  alvo.textContent='📅 Data selecionada: '+partes[2]+'/'+partes[1]+'/'+partes[0];
 }
 function statusLabel(s){
   return ({agendado:'Agendado',confirmado:'Confirmado',atendido:'Atendido',cancelado:'Cancelado',faltou:'Faltou'})[s] || s || 'Agendado';
@@ -2275,6 +2285,7 @@ function mostrarTelaAdmin(tela){
     const dataAgenda=document.getElementById('data');
     const hoje=hojeLocal();
     if(dataAgenda && (!dataAgenda.value || dataAgenda.value < hoje)) dataAgenda.value=hoje;
+    atualizarDataExataAgendaAdmin();
     carregarAgenda().catch(e=>console.error('Erro ao carregar agenda:',e));
   }
   if(tela==='conta'){
