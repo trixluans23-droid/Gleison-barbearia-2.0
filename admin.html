@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta content="#08090b" name="theme-color"/>
-<title>Gleison Barbearia — Painel V15</title>
+<title>Gleison Barbearia — Painel V16</title>
 <style>
 :root{--bg:#070809;--panel:#111417;--panel2:#171b1f;--gold:#d8a63b;--gold2:#f2c766;--text:#f5f5f5;--muted:#a8adb3;--green:#4bd37b;--red:#ff5c5c;--line:#2a2f34}
 *{box-sizing:border-box}
@@ -667,21 +667,16 @@ async function carregarMensagensAdmin(){
   }
 }
 
-async function atualizarTudoAdminAgora(btn){
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Atualizando...'; }
-  try{
-    await carregarAgenda();
-    await carregarMensagensAdmin();
-    if(typeof atualizarFinanceiro === 'function') await atualizarFinanceiro();
-    if(btn) btn.textContent='✓ Atualizado';
-    showToastAdmin('Agenda, mensagens e financeiro atualizados.');
-  }catch(e){
-    console.error('Erro ao atualizar tudo:',e);
-    if(btn) btn.textContent='↻ Tentar novamente';
-    showToastAdmin('Não foi possível atualizar tudo.');
-  }finally{
-    setTimeout(()=>{ if(btn){ btn.disabled=false; btn.textContent='↻ Atualizar'; } },1500);
+function atualizarTudoAdminAgora(btn){
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='⏳ Atualizando...';
   }
+  // Força uma nova requisição da página administrativa.
+  // O parâmetro único evita que o navegador reutilize a versão antiga em cache.
+  const url=window.location.href.split('#')[0];
+  const separador=url.includes('?')?'&':'?';
+  window.location.replace(url+separador+'atualizar='+Date.now()+'&v=admin');
 }
 
 function atualizarMensagensAdminAgora(btn){
