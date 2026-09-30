@@ -357,6 +357,95 @@ jobs:
           print("Regra de encerramento corrigida.")
           PY
 
+      - name: Ordenar Minha agenda
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <script id="ordenacao-minha-agenda-script">
+          (function(){
+            function norm(v){return (v||"").replace(/\s+/g," ").trim();}
+            function getDate(text){
+              var m=norm(text).match(/(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/);
+              if(!m)return null;
+              var d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],0,0);
+              return isNaN(d.getTime())?null:d;
+            }
+            function getCards(){
+              var dateNodes=Array.prototype.slice.call(document.querySelectorAll("body *")).filter(function(el){
+                return /(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/.test(norm(el.textContent));
+              });
+              var found=[];
+              dateNodes.forEach(function(node){
+                var el=node;
+                for(var i=0;i<7 && el;i++,el=el.parentElement){
+                  var t=norm(el.innerText);
+                  if(/Cliente:\s*/i.test(t) &&
+                     /(Agendado|Cancelado|Atendimento encerrado|Atendido|Não compareceu)/i.test(t) &&
+                     getDate(t)){
+                    var r=el.getBoundingClientRect();
+                    if(r.width>200 && r.height>100 && found.indexOf(el)<0) found.push(el);
+                    break;
+                  }
+                }
+              });
+              return found;
+            }
+            function status(card){
+              var t=norm(card.innerText);
+              if(/\bAgendado\b/i.test(t))return "agendado";
+              if(/\bAtendimento encerrado\b/i.test(t))return "encerrado";
+              if(/\bAtendido\b/i.test(t))return "atendido";
+              if(/\bNão compareceu\b/i.test(t))return "nao_compareceu";
+              if(/\bCancelado\b/i.test(t))return "cancelado";
+              return "outro";
+            }
+            function order(card){
+              var d=getDate(card.innerText);
+              var st=status(card);
+              var prioridade=st==="agendado"?0:1;
+              return [prioridade,d?d.getTime():Number.MAX_SAFE_INTEGER];
+            }
+            function sortAgenda(){
+              var cards=getCards();
+              var groups=[];
+              cards.forEach(function(card){
+                var parent=card.parentElement;
+                if(!parent)return;
+                var g=groups.find(function(x){return x.parent===parent;});
+                if(!g){g={parent:parent,cards:[]};groups.push(g);}
+                if(g.cards.indexOf(card)<0)g.cards.push(card);
+              });
+              groups.forEach(function(g){
+                if(g.cards.length<2)return;
+                var sorted=g.cards.slice().sort(function(a,b){
+                  var oa=order(a),ob=order(b);
+                  if(oa[0]!==ob[0])return oa[0]-ob[0];
+                  return oa[1]-ob[1];
+                });
+                sorted.forEach(function(card){g.parent.appendChild(card);});
+              });
+            }
+            function start(){
+              sortAgenda();
+              setInterval(sortAgenda,30000);
+              new MutationObserver(function(){sortAgenda();}).observe(document.body,{childList:true,subtree:true});
+            }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
+            else start();
+          })();
+          </script>
+          '''
+          if 'id="ordenacao-minha-agenda-script"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Ordenação da Minha agenda adicionada.")
+          PY
+
       - name: Validar alterações do sistema
         run: |
           python3 - <<'PY'
