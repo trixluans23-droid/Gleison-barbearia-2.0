@@ -19,13 +19,71 @@ jobs:
           unzip -o "GleisonBarbearia_2.0_V27_FCM.zip"
           test -f GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/FirebaseMessagingService.java
 
-      - name: Preparar sistema completo e abrir no WebView
+      - name: Colocar sistema online atual no APK
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # O mesmo index.html do projeto Android é o sistema completo do cliente.
-          # Incluímos também a área administrativa para o menu de três pontos.
+          # O ZIP do projeto Android contém uma versão antiga do index.html.
+          # O sistema oficial atual é o site gerado pelo workflow Publicar sistema online.
+          RUN_ID="$(gh run list --workflow deploy-site.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          test -n "$RUN_ID"
+          rm -rf /tmp/site-atual
+          mkdir -p /tmp/site-atual
+          gh run download "$RUN_ID" -n github-pages -D /tmp/site-atual
+          CURRENT_INDEX="$(find /tmp/site-atual -type f -name index.html -print -quit)"
+          test -n "$CURRENT_INDEX"
+          cp "$CURRENT_INDEX" GleisonBarbeariaAndroid/app/src/main/assets/index.html
           cp admin.html GleisonBarbeariaAndroid/app/src/main/assets/admin.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/index.html
           test -s GleisonBarbeariaAndroid/app/src/main/assets/admin.html
+
+          # Confirma que o APK recebeu recursos que não existiam na versão antiga.
+          grep -q 'menu-tres-pontos-online' GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          grep -q 'btn-atualizar-online' GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          grep -q 'Meu histórico' GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          grep -q 'Administrador' GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          echo "Sistema online atual copiado para o APK a partir do deploy #$RUN_ID."
+
+          cat > GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/MainActivity.java <<'JAVA'
+          package com.gleisonbarbearia.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          public class MainActivity extends Activity {
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  webView = new WebView(this);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  setContentView(webView);
+                  webView.loadUrl("file:///android_asset/index.html");
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView != null && webView.canGoBack()) webView.goBack();
+                  else super.onBackPressed();
+              }
+          }
+          JAVA
+
+          MANIFEST="GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml"
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i '/<manifest[^>]*>/a\\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+          fi
+          echo "WebView configurado para abrir o sistema atual."
 
           cat > GleisonBarbeariaAndroid/app/src/main/java/com/gleisonbarbearia/app/MainActivity.java <<'JAVA'
           package com.gleisonbarbearia.app;
