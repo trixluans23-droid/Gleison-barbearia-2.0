@@ -107,7 +107,8 @@ jobs:
           <div id="menu-tres-pontos-overlay" aria-hidden="true">
             <div id="menu-tres-pontos" role="menu" aria-label="Menu principal">
               <div class="menu-titulo">Menu</div>
-              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>\n              <button type="button" data-menu-acao="historico"><span class="ico">📋</span>Meu histórico</button>
+              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>
+              <button type="button" data-menu-acao="historico"><span class="ico">📋</span>Meu histórico</button>
               <button type="button" data-menu-acao="inicio"><span class="ico">⌂</span>Início</button>
               <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
               <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
@@ -541,7 +542,7 @@ jobs:
                 lista.innerHTML=rows.map(function(a){
                   var st=a.status==="atendido"?"Atendido":"Cancelado";
                   var cls=a.status==="atendido"?"atendido":"cancelado";
-                  return '<div class="gc-hist-card"><div class="gc-hist-top"><div class="gc-hist-servico">'+String(a.servico_nome||"Serviço").replace(/[&<>]/g,function(x){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[x]})+'</div><span class="gc-hist-status '+cls+'">'+st+'</span></div><div class="gc-hist-info">📅 '+fmtDate(a.data_hora)+'<br>✂️ '+String(a.barbeiro_nome||"Gleison")+'</div>'+(a.preco!=null?'<div class="gc-hist-preco">'+money(a.preco)+'</div>':"")+'</div>';
+                  return '<div class="gc-hist-card"><div class="gc-hist-top"><div class="gc-hist-servico">'+String(a.servico_nome||"Serviço não informado").replace(/[&<>]/g,function(x){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[x]})+'</div><span class="gc-hist-status '+cls+'">'+st+'</span></div><div class="gc-hist-info">📅 '+fmtDate(a.data_hora)+'<br>✂️ '+String(a.barbeiro_nome||"Gleison")+'</div>'+(a.preco!=null?'<div class="gc-hist-preco">'+money(a.preco)+'</div>':"")+'</div>';
                 }).join("");
               }catch(e){console.error(e);lista.innerHTML='<div class="gc-hist-vazio">Não foi possível carregar o histórico agora.</div>'}
             }
