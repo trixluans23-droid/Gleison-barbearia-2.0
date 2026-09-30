@@ -629,19 +629,9 @@ jobs:
                 btn.textContent="↻ Atualizando...";
               }
 
-              var agenda=document.getElementById("agenda");
-              var aberta=agenda && !agenda.classList.contains("hidden");
-
-              if(aberta){
-                window.loadMyAgenda().finally(function(){
-                  if(btn){
-                    btn.disabled=false;
-                    btn.textContent="↻ Atualizar";
-                  }
-                });
-              }else{
-                window.location.replace(window.location.pathname+"?atualizar="+Date.now()+"&v=agenda");
-              }
+              // Recarrega a página inteira para buscar a versão mais recente publicada.
+              // Apenas chamar loadMyAgenda() não atualiza o HTML/CSS já carregado no navegador.
+              window.location.replace(window.location.pathname+"?atualizar="+Date.now()+"&v=agenda");
             };
 
             function ligarBotao(){
