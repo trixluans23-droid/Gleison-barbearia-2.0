@@ -1994,69 +1994,77 @@ async function salvarExcecaoFuncionamentoAdmin(aberta,motivo){
 
 async function abrirDiaExcepcionalAdmin(){
   const data=document.getElementById('excecaoDataAdmin')?.value;
+  const msg=document.getElementById('excecaoMensagemAdmin');
   if(!data) return carregarStatusExcecaoAdmin();
   if(data < dataHojeAdmin()){
-    const msg=document.getElementById('excecaoMensagemAdmin');
     if(msg) msg.innerHTML='<div class="error">Não é possível alterar uma data que já passou.</div>';
     return;
   }
-  const dow=diaSemanaAdmin(data);
-  const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:data});
-  const status=Array.isArray(resultado)?resultado[0]:resultado;
-  const excepcional=!!(status && status.excepcional);
-  const aberta=!!(status && status.aberta);
-  if(dow!==0 && dow!==1 && !excepcional){
-    const msg=document.getElementById('excecaoMensagemAdmin');
-    if(msg) msg.innerHTML='<div class="error">Este dia já funciona normalmente. Para terça a sábado, use esta opção apenas para reabrir um dia que foi fechado excepcionalmente.</div>';
-    return;
+  const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
+  botoes.forEach(b=>{if(b)b.disabled=true;});
+  if(msg) msg.innerHTML='<div class="small">⏳ Abrindo...</div>';
+  try{
+    const resultado=await chamarRPC('definir_excecao_funcionamento',{
+      p_data:data,
+      p_aberta:true,
+      p_motivo:'Abertura excepcional'
+    });
+    if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou a abertura.');
+    if(msg) msg.innerHTML='<div class="success">✓ Dia aberto excepcionalmente.</div>';
+    await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
+  }catch(e){
+    console.error('Erro ao abrir dia excepcional:',e);
+    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível abrir o dia: '+escapeHtml(e?.message||'erro desconhecido')+'</div>';
+    await carregarStatusExcecaoAdmin();
   }
-  if(aberta && excepcional) return;
-  if(!confirm('Deseja abrir a barbearia em '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+'?')) return;
-  const motivo=prompt('Motivo (opcional):',dow===0 || dow===1 ? 'Abertura excepcional' : 'Reabertura excepcional');
-  if(motivo===null) return;
-  await salvarExcecaoFuncionamentoAdmin(true,motivo.trim() || (dow===0 || dow===1 ? 'Abertura excepcional' : 'Reabertura excepcional'));
 }
 
 async function fecharDiaExcepcionalAdmin(){
   const data=document.getElementById('excecaoDataAdmin')?.value;
+  const msg=document.getElementById('excecaoMensagemAdmin');
   if(!data) return carregarStatusExcecaoAdmin();
   if(data < dataHojeAdmin()){
-    const msg=document.getElementById('excecaoMensagemAdmin');
     if(msg) msg.innerHTML='<div class="error">Não é possível alterar uma data que já passou.</div>';
     return;
   }
-  const resultado=await chamarRPC('obter_status_barbearia_data',{p_data:data});
-  const status=Array.isArray(resultado)?resultado[0]:resultado;
-  const aberta=!!(status && status.aberta);
-  if(!aberta) return;
-  if(!confirm('Deseja fechar '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+' excepcionalmente?')) return;
-  const motivo=prompt('Informe o motivo do fechamento excepcional (opcional):','Fechamento excepcional');
-  if(motivo===null) return;
-  await salvarExcecaoFuncionamentoAdmin(false,motivo.trim() || 'Fechamento excepcional');
+  const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
+  botoes.forEach(b=>{if(b)b.disabled=true;});
+  if(msg) msg.innerHTML='<div class="small">⏳ Fechando...</div>';
+  try{
+    const resultado=await chamarRPC('definir_excecao_funcionamento',{
+      p_data:data,
+      p_aberta:false,
+      p_motivo:'Fechamento excepcional'
+    });
+    if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou o fechamento.');
+    if(msg) msg.innerHTML='<div class="success">✓ Dia fechado excepcionalmente.</div>';
+    await carregarStatusExcecaoAdmin();
+    await carregarCalendarioFechamentosAdmin();
+  }catch(e){
+    console.error('Erro ao fechar dia excepcional:',e);
+    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível fechar o dia: '+escapeHtml(e?.message||'erro desconhecido')+'</div>';
+    await carregarStatusExcecaoAdmin();
+  }
 }
 
 async function restaurarPadraoDiaAdmin(){
   const data=document.getElementById('excecaoDataAdmin')?.value;
   const msg=document.getElementById('excecaoMensagemAdmin');
-  if(!data) return;
-  // Não usar window.confirm aqui: no WebView/Android o diálogo pode não aparecer,
-  // fazendo o botão parecer que não responde. O clique já confirma a restauração.
+  if(!data) return carregarStatusExcecaoAdmin();
   const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
   botoes.forEach(b=>{if(b)b.disabled=true;});
   if(msg) msg.innerHTML='<div class="small">⏳ Restaurando...</div>';
   try{
     const resultado=await chamarRPC('restaurar_excecao_funcionamento',{p_data:data});
-    if(resultado!==true && resultado!=='true') throw new Error('Não foi possível restaurar o padrão.');
+    if(resultado!==true && resultado!=='true') throw new Error('O Supabase não confirmou a restauração.');
     if(msg) msg.innerHTML='<div class="success">✓ Funcionamento padrão restaurado.</div>';
     await carregarStatusExcecaoAdmin();
     await carregarCalendarioFechamentosAdmin();
   }catch(e){
-    console.error(e);
-    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível restaurar o padrão: '+escapeHtml(e?.message||'erro desconhecido')+'</div>';
+    console.error('Erro ao restaurar padrão:',e);
+    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível restaurar: '+escapeHtml(e?.message||'erro desconhecido')+'</div>';
     await carregarStatusExcecaoAdmin();
-    await carregarCalendarioFechamentosAdmin();
-  }finally{
-    // O estado correto dos três botões é recalculado por carregarStatusExcecaoAdmin().
   }
 }
 
