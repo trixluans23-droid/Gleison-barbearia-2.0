@@ -99,7 +99,6 @@ code = r'''
     var fotoInput=document.getElementById("gc-foto-perfil-input");
     var fotoBtn=document.getElementById("gc-foto-perfil-salvar");
     if(fotoInput){fotoInput.addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});}
-    if(fotoBtn&&fotoInput){fotoBtn.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();try{if(typeof fotoInput.showPicker==="function"){fotoInput.showPicker();return}}catch(x){}fotoInput.click();});}
     carregar()
   }
   function abrirNoNavegador(){
