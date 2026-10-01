@@ -1682,18 +1682,25 @@ jobs:
           <script id="remover-perfil-barra-inferior-script">
           (function(){
             function esconder(){
-              var itens=document.querySelectorAll("nav button, nav a, .bottom-nav button, .bottom-nav a, [class*='bottom'] button, [class*='bottom'] a");
+              var itens=document.querySelectorAll("button, a, [role='button'], [onclick]");
               Array.prototype.forEach.call(itens,function(el){
                 var t=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if(t==="perfil" || t==="meu perfil" || t==="barbearia"){
-                  el.classList.add("nav-profile-hidden");
-                }
+                var id=(el.id||"").toLowerCase();
+                var cls=String(el.className||"").toLowerCase();
+                var click=(el.getAttribute("onclick")||"").toLowerCase();
+                var aria=(el.getAttribute("aria-label")||"").toLowerCase();
+                var perfil=(t==="perfil" || t==="meu perfil" || /perfil|profile/.test(id+" "+cls+" "+aria+" "+click));
+                if(!perfil || el.closest("#menu-tres-pontos, #menu-tres-pontos-overlay, #gc-perfil-overlay, #gc-cadastro-overlay"))return;
+                var rect=el.getBoundingClientRect();
+                var pertoRodape=rect.top>window.innerHeight*0.70;
+                if(pertoRodape)el.classList.add("nav-profile-hidden");
               });
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",esconder);
             else esconder();
             setTimeout(esconder,500);
             setTimeout(esconder,1500);
+            document.addEventListener("click",function(){setTimeout(esconder,100)},true);
           })();
           </script>
           '''
