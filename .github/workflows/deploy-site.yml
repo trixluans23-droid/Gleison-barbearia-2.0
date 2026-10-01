@@ -44,6 +44,7 @@ jobs:
 
           echo "Sistema preparado para publicação."
           python3 scripts/sincronizar_horarios_cliente.py
+          python3 scripts/integrar_lembrete_online.py
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
         run: |
