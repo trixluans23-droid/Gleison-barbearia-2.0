@@ -95,7 +95,6 @@ code = r'''
       '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" style="display:none">'+
       '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Adicionar / alterar foto</button>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
-    document.getElementById("gc-foto-perfil-salvar").addEventListener("click",function(){document.getElementById("gc-foto-perfil-input").click()});
     document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});
     carregar()
   }
