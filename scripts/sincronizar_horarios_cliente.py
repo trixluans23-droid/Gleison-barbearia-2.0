@@ -1,29 +1,31 @@
 from pathlib import Path
 import re
 
-p=Path("site/index.html")
-s=p.read_text(encoding="utf-8")
+p = Path("site/index.html")
+s = p.read_text(encoding="utf-8")
 
-# Garante que a agenda do cliente use abertura e fechamento configurados pelo administrador.
-padrao=r'(const\s+timesWeekday\s*=\s*\[[^\]]*?)"20:30"'
-s,n=re.subn(padrao,r'\1"20:30","21:00","21:30","22:00","22:30","23:00"',s,count=1)
-if n==0:
-    # Versão alternativa caso a lista use outra formatação.
-    s=s.replace('const timesWeekday = ["09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30"];',
-                'const timesWeekday = ["09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30","22:00","22:30","23:00"];')
+# Acrescenta slots de 30 minutos até 23:00 à lista legada.
+padrao = r'(const\s+timesWeekday\s*=\s*\[[^\]]*?)"20:30"'
+s, n = re.subn(padrao, r'\1"20:30","21:00","21:30","22:00","22:30","23:00"', s, count=1)
+if n == 0:
+    s = s.replace(
+        'const timesWeekday = ["09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30"];',
+        'const timesWeekday = ["09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30","22:00","22:30","23:00"];'
+    )
 
-# Domingo e segunda continuam fechados; terça-feira não deve mais ser bloqueada.
-s=s.replace('return weekday===0 || weekday===1 || weekday===2;', 'return weekday===0 || weekday===1;')
-s=s.replace('if(weekday===0 || weekday===1 || weekday===2) return [];', 'if(weekday===0 || weekday===1) return [];')
+# Domingo e segunda fechados; terça-feira liberada.
+s = s.replace('return weekday===0 || weekday===1 || weekday===2;', 'return weekday===0 || weekday===1;')
+s = s.replace('if(weekday===0 || weekday===1 || weekday===2) return [];', 'if(weekday===0 || weekday===1) return [];')
 
-# Se existir o horário comercial fixo antigo, atualiza também o aviso visual para 23:00.
-s=s.replace("return {inicio:9*60, fim:20*60+30, fimTexto:'20:30'};",
-            "return {inicio:9*60, fim:23*60, fimTexto:'23:00'};")
+# Mantém o aviso legado coerente.
+s = s.replace(
+    "return {inicio:9*60, fim:20*60+30, fimTexto:'20:30'};",
+    "return {inicio:9*60, fim:23*60, fimTexto:'23:00'};"
+)
 
-# A agenda atual do cliente gera os horários dentro de renderTimes().
-# Substitui o limite fixo de 20:30 por uma leitura do horário salvo pelo administrador.
+# A agenda atual gera os slots dentro de renderTimes(). Usa os horários salvos no Supabase.
 old_limite = "const limiteSabado = new Date(data+'T12:00:00').getDay()===6 ? 23*60 : 20*60+30;"
-new_limite = """let inicioAgenda=9*60;
+new_limite = '''let inicioAgenda=9*60;
     let limiteSabado=23*60;
     try{
       const {data:horarioFuncionamento,error:horarioError}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
@@ -41,10 +43,18 @@ new_limite = """let inicioAgenda=9*60;
       if(fechamento!==null) limiteSabado=fechamento;
     }catch(e){
       console.warn('Não foi possível carregar o horário de funcionamento:',e);
-    }"
-s=s.replace(old_limite,new_limite)
+    }'''
+if old_limite not in s:
+    raise SystemExit("limite fixo não encontrado no HTML")
+s = s.replace(old_limite, new_limite, 1)
 
-# Atualiza rapidamente a agenda aberta do cliente quando o administrador altera o horário.\n# O intervalo de 15s passa para 2s somente enquanto a tela de agendamento está aberta.\ns=s.replace('},15000);','},2000);')
+# Usa a abertura configurada nos loops que ainda começavam às 09:00.
+s = s.replace('for(let m=9*60;', 'for(let m=inicioAgenda;')
+s = s.replace('for(let i=9*60;', 'for(let i=inicioAgenda;')
+s = s.replace('for(let t=9*60;', 'for(let t=inicioAgenda;')
 
-p.write_text(s,encoding="utf-8")
-print("Horários até 23:00 aplicados à agenda do cliente.")
+# Atualização rápida enquanto a tela de agendamento está aberta.
+s = s.replace('},15000);', '},2000);')
+
+p.write_text(s, encoding="utf-8")
+print("Horários configuráveis aplicados à agenda do cliente.")
