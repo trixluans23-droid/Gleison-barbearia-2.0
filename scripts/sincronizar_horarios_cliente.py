@@ -4,7 +4,7 @@ import re
 p=Path("site/index.html")
 s=p.read_text(encoding="utf-8")
 
-old=re.search(r"function horarioFuncionamentoCliente\([^)]*\)\\s*\\{.*?\\n\\}\\s*\\n\\s*function estaDentroDoHorarioCliente\\(",s,re.S)
+old=re.search(r"function horarioFuncionamentoCliente.*?function estaDentroDoHorarioCliente",s,re.S)
 if not old:
     raise SystemExit("horarioFuncionamentoCliente não encontrado")
 
@@ -69,7 +69,7 @@ function estaDentroDoHorarioCliente(){
   return minutos>=h.inicio && minutos<h.fim;
 }"""
 s=s[:old.start()]+new+s[old.end():]
-
+old2=re.search(r"const timesWeekday = .*?function nomeDiaFechado.*?\n\}",s,re.S)
 old2=re.search(r"const timesWeekday = .*?function nomeDiaFechado\\([^)]*\\)\\s*\\{.*?\\n\\}",s,re.S)
 if not old2:
     raise SystemExit("bloco de horários do agendamento não encontrado")
