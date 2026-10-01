@@ -4,7 +4,7 @@ import re
 p=Path("site/index.html")
 s=p.read_text(encoding="utf-8")
 
-# Garante que a agenda de terça a sexta tenha horários até 23:00.
+# Garante que a agenda do cliente use abertura e fechamento configurados pelo administrador.
 padrao=r'(const\s+timesWeekday\s*=\s*\[[^\]]*?)"20:30"'
 s,n=re.subn(padrao,r'\1"20:30","21:00","21:30","22:00","22:30","23:00"',s,count=1)
 if n==0:
@@ -22,7 +22,25 @@ s=s.replace("return {inicio:9*60, fim:20*60+30, fimTexto:'20:30'};",
 
 # A agenda atual do cliente gera os horários dentro de renderTimes().
 # Substitui o limite fixo de 20:30 por uma leitura do horário salvo pelo administrador.
-old_limite = "const limiteSabado = new Date(data+'T12:00:00').getDay()===6 ? 23*60 : 20*60+30;"
+old_limite = "let inicioAgenda=9*60;
+    let limiteSabado=23*60;
+    try{
+      const {data:horarioFuncionamento,error:horarioError}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
+      if(horarioError) throw horarioError;
+      const row=Array.isArray(horarioFuncionamento)?horarioFuncionamento[0]:horarioFuncionamento;
+      const parseMin=v=>{
+        const p=String(v||'').slice(0,5).split(':').map(Number);
+        return p.length===2 && p.every(Number.isFinite) ? p[0]*60+p[1] : null;
+      };
+      const abertura=parseMin(row && row.hora_abertura);
+      const fechamento=parseMin(new Date(data+'T12:00:00').getDay()===6
+        ? (row && row.hora_fechamento_sabado)
+        : (row && row.hora_fechamento));
+      if(abertura!==null) inicioAgenda=abertura;
+      if(fechamento!==null) limiteSabado=fechamento;
+    }catch(e){
+      console.warn('Não foi possível carregar o horário de funcionamento:',e);
+    }"
 new_limite = """let limiteSabado;
     try{
       const {data:horarioFuncionamento,error:horarioError}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
