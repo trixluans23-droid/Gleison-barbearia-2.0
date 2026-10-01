@@ -42,9 +42,166 @@ jobs:
           cp admin.html site/admin.html
 
           echo "Sistema preparado para publicação."
+          python3 scripts/sincronizar_horarios_cliente.py
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
-        run: python3 scripts/sincronizar_horarios_cliente.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <script id="horarios-funcionamento-cliente-online">
+          (function(){
+            let cache={abertura:'09:00',fechamento:'20:30',fechamentoSabado:'23:00'};
+            const excecoes={};
+
+            function mins(v){
+              const p=String(v||'').slice(0,5).split(':').map(Number);
+              return p.length===2 && p.every(Number.isFinite) ? p[0]*60+p[1] : null;
+            }
+
+            async function carregarHorarios(){
+              try{
+                const r=await supabaseClient.rpc('obter_horarios_funcionamento',{});
+                if(r.error) throw r.error;
+                const row=Array.isArray(r.data)?r.data[0]:r.data;
+                if(row){
+                  cache={
+                    abertura:String(row.hora_abertura||'09:00').slice(0,5),
+                    fechamento:String(row.hora_fechamento||'20:30').slice(0,5),
+                    fechamentoSabado:String(row.hora_fechamento_sabado||'23:00').slice(0,5)
+                  };
+                }
+              }catch(e){ console.warn('Horários do administrador:',e); }
+              return cache;
+            }
+
+            async function carregarExcecao(data){
+              if(!data) return null;
+              try{
+                const r=await supabaseClient.rpc('listar_excecoes_funcionamento',{
+                  p_inicio:data,p_fim:data
+                });
+                if(r.error) throw r.error;
+                const row=Array.isArray(r.data)?(r.data[0]||null):r.data;
+                excecoes[data]=row||null;
+                return excecoes[data];
+              }catch(e){
+                console.warn('Exceção de funcionamento:',e);
+                excecoes[data]=null;
+                return null;
+              }
+            }
+
+            function dia(data){
+              const p=String(data||'').split('-').map(Number);
+              return p.length===3 && p.every(Number.isFinite)
+                ? new Date(p[0],p[1]-1,p[2]).getDay()
+                : new Date().getDay();
+            }
+
+            window.horarioFuncionamentoCliente=function(data){
+              const d=dia(data||dataLocalHoje());
+              const ex=excecoes[data||dataLocalHoje()];
+              if(ex && ex.aberta===false) return null;
+              if((d===0 || d===1) && !(ex && ex.aberta===true)) return null;
+
+              const inicio=mins(cache.abertura);
+              const fim=mins(d===6 ? cache.fechamentoSabado : cache.fechamento);
+              if(inicio===null || fim===null || fim<=inicio) return null;
+              return {
+                inicio:inicio,
+                fim:fim,
+                fimTexto:d===6 ? cache.fechamentoSabado : cache.fechamento
+              };
+            };
+
+            window.estaDentroDoHorarioCliente=function(){
+              const h=window.horarioFuncionamentoCliente(dataLocalHoje());
+              if(!h) return false;
+              const agora=new Date();
+              const m=agora.getHours()*60+agora.getMinutes();
+              return m>=h.inicio && m<h.fim;
+            };
+
+            window.dataFechadaPorDia=function(data){
+              const d=dia(data);
+              const ex=excecoes[data];
+              if(ex && ex.aberta===true) return false;
+              if(ex && ex.aberta===false) return true;
+              return d===0 || d===1;
+            };
+
+            window.getTimesForDate=function(data){
+              const h=window.horarioFuncionamentoCliente(data);
+              if(!h) return [];
+              const lista=[];
+              for(let m=h.inicio;m<=h.fim;m+=30){
+                if(m>11*60 && m<14*60) continue;
+                lista.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
+              }
+              return lista;
+            };
+
+            async function atualizarAgendaCliente(){
+              const input=document.getElementById('date');
+              const data=input && input.value;
+              if(!data) return;
+              await carregarHorarios();
+              await carregarExcecao(data);
+              if(typeof loadOccupiedTimes==='function') await loadOccupiedTimes();
+              if(typeof renderTimes==='function') renderTimes();
+            }
+
+            const originalOpen=window.openBooking;
+            if(typeof originalOpen==='function'){
+              window.openBooking=async function(){
+                const input=document.getElementById('date');
+                const data=input && input.value;
+                await carregarHorarios();
+                if(data) await carregarExcecao(data);
+                return originalOpen.apply(this,arguments);
+              };
+            }
+
+            const originalConfirm=window.confirmBooking;
+            if(typeof originalConfirm==='function'){
+              window.confirmBooking=async function(){
+                const input=document.getElementById('date');
+                const data=input && input.value;
+                await carregarHorarios();
+                if(data) await carregarExcecao(data);
+                return originalConfirm.apply(this,arguments);
+              };
+            }
+
+            document.addEventListener('DOMContentLoaded',function(){
+              carregarHorarios().then(function(){
+                const input=document.getElementById('date');
+                if(input && input.value) atualizarAgendaCliente();
+              });
+              const input=document.getElementById('date');
+              if(input){
+                input.addEventListener('change',atualizarAgendaCliente);
+              }
+              setInterval(function(){
+                const modal=document.getElementById('bookingModal');
+                if(modal && modal.classList.contains('show')) atualizarAgendaCliente();
+                else carregarHorarios();
+              },15000);
+            });
+          })();
+          </script>
+          '''
+
+          if 'id="horarios-funcionamento-cliente-online"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Agenda do cliente sincronizada com os horários salvos pelo administrador.")
+          PY
 
       - name: Adicionar botão Atualizar
         run: |
