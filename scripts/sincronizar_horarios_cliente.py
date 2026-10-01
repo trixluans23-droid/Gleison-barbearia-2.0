@@ -48,6 +48,9 @@ if old_limite not in s:
     raise SystemExit("limite fixo não encontrado no HTML")
 s = s.replace(old_limite, new_limite, 1)
 
+# Usa a abertura configurada também na variável de início da agenda.
+s = s.replace('const inicio=9*60;', 'const inicio=inicioAgenda;')
+
 # Usa a abertura configurada nos loops que ainda começavam às 09:00.
 s = s.replace('for(let m=9*60;', 'for(let m=inicioAgenda;')
 s = s.replace('for(let i=9*60;', 'for(let i=inicioAgenda;')
