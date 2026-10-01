@@ -70,7 +70,6 @@ function estaDentroDoHorarioCliente(){
 }"""
 s=s[:old.start()]+new+s[old.end():]
 old2=re.search(r"const timesWeekday = .*?function nomeDiaFechado.*?\n\}",s,re.S)
-old2=re.search(r"const timesWeekday = .*?function nomeDiaFechado\\([^)]*\\)\\s*\\{.*?\\n\\}",s,re.S)
 if not old2:
     raise SystemExit("bloco de horários do agendamento não encontrado")
 
