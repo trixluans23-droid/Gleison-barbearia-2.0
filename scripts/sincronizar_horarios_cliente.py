@@ -22,7 +22,8 @@ s=s.replace("return {inicio:9*60, fim:20*60+30, fimTexto:'20:30'};",
 
 # A agenda atual do cliente gera os horários dentro de renderTimes().
 # Substitui o limite fixo de 20:30 por uma leitura do horário salvo pelo administrador.
-old_limite = "let inicioAgenda=9*60;
+old_limite = "const limiteSabado = new Date(data+'T12:00:00').getDay()===6 ? 23*60 : 20*60+30;"
+new_limite = """let inicioAgenda=9*60;
     let limiteSabado=23*60;
     try{
       const {data:horarioFuncionamento,error:horarioError}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
@@ -41,19 +42,6 @@ old_limite = "let inicioAgenda=9*60;
     }catch(e){
       console.warn('Não foi possível carregar o horário de funcionamento:',e);
     }"
-new_limite = """let limiteSabado;
-    try{
-      const {data:horarioFuncionamento,error:horarioError}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
-      if(horarioError) throw horarioError;
-      const row=Array.isArray(horarioFuncionamento)?horarioFuncionamento[0]:horarioFuncionamento;
-      const p=String((new Date(data+'T12:00:00').getDay()===6
-        ? (row && row.hora_fechamento_sabado)
-        : (row && row.hora_fechamento)) || '23:00').slice(0,5).split(':').map(Number);
-      limiteSabado=p.length===2 && p.every(Number.isFinite) ? p[0]*60+p[1] : 23*60;
-    }catch(e){
-      console.warn('Não foi possível carregar o horário de funcionamento:',e);
-      limiteSabado=23*60;
-    }"""
 s=s.replace(old_limite,new_limite)
 
 # Atualiza rapidamente a agenda aberta do cliente quando o administrador altera o horário.\n# O intervalo de 15s passa para 2s somente enquanto a tela de agendamento está aberta.\ns=s.replace('},15000);','},2000);')
