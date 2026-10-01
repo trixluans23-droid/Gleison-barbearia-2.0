@@ -47,11 +47,11 @@ public class GleisonAndroidBridge {
             f.setTimeZone(java.util.TimeZone.getTimeZone("America/Sao_Paulo"));
             java.util.Date d = f.parse(normalized.length() >= 19 ? normalized.substring(0,19) : normalized + ":00");
             if (d == null) return;
-            long trigger = d.getTime() - 20L * 60L * 1000L;
+            long trigger = d.getTime() - 2L * 60L * 1000L;
             if (trigger <= System.currentTimeMillis()) return;
             Intent intent = new Intent(context, GleisonReminderReceiver.class);
             intent.putExtra("titulo", titulo == null ? "Gleison Barbearia" : titulo);
-            intent.putExtra("corpo", corpo == null ? "Seu horário é em aproximadamente 20 minutos." : corpo);
+            intent.putExtra("corpo", corpo == null ? "Seu horário é em aproximadamente 2 minutos." : corpo);
             int requestCode = Math.abs((iso + (titulo == null ? "" : titulo)).hashCode());
             PendingIntent pi = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -102,7 +102,7 @@ public class GleisonReminderReceiver extends BroadcastReceiver {
         String titulo = received.getStringExtra("titulo");
         String corpo = received.getStringExtra("corpo");
         if (titulo == null || titulo.trim().isEmpty()) titulo = "Gleison Barbearia";
-        if (corpo == null || corpo.trim().isEmpty()) corpo = "Seu horário é em aproximadamente 20 minutos.";
+        if (corpo == null || corpo.trim().isEmpty()) corpo = "Seu horário é em aproximadamente 2 minutos.";
         android.app.Notification.Builder b = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new android.app.Notification.Builder(context, CHANNEL_ID) : new android.app.Notification.Builder(context);
         b.setSmallIcon(R.drawable.ic_stat_notification).setContentTitle(titulo).setContentText(corpo).setStyle(new android.app.Notification.BigTextStyle().bigText(corpo)).setAutoCancel(true).setContentIntent(pi).setPriority(android.app.Notification.PRIORITY_HIGH).setVisibility(android.app.Notification.VISIBILITY_PUBLIC).setVibrate(new long[]{0,180,70,180,70,700});
         manager.notify((int)(System.currentTimeMillis() & 0x7fffffff), b.build());
