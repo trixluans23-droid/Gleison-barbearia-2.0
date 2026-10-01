@@ -54,13 +54,46 @@ code = r'''
     wrap.innerHTML='<img id="gc-foto-perfil-preview" class="gc-foto-perfil-preview gc-foto-perfil-placeholder" alt="Sem foto" src="" />'+
       '<label style="width:100%;margin:0">Foto do perfil</label>'+
       '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" capture="user">'+
-      '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Alterar minha foto</button>';
+      '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Alterar minha foto</button>'+
+      '<button type="button" id="gc-foto-perfil-navegador" class="gc-foto-perfil-btn" style="background:#20252a!important;color:#fff!important;border:1px solid #555">🌐 Abrir galeria no navegador</button>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
     document.getElementById("gc-foto-perfil-salvar").addEventListener("click",salvar);
     document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f)preview(URL.createObjectURL(f))});
     carregar()
   }
-  function iniciar(){preparar();var pm=document.querySelector('[data-menu-acao="perfil"]');if(pm)pm.addEventListener("click",function(){setTimeout(function(){preparar();carregar()},120)},true);var obs=new MutationObserver(function(){preparar()});if(document.body)obs.observe(document.body,{childList:true,subtree:true})}
+  function abrirNoNavegador(){
+    var tel=telefone(),base=location.origin+location.pathname;
+    var alvo=base+"?foto_perfil=1&telefone="+encodeURIComponent(tel);
+    var semEsquema=alvo.replace(/^https?:\/\//,"");
+    var intent="intent://"+semEsquema+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(alvo)+";end";
+    try{window.location.href=intent}catch(e){window.open(alvo,"_blank")}
+  }
+  function prepararBotaoNavegador(){
+    var b=document.getElementById("gc-foto-perfil-navegador");
+    if(b&&!b.__ligado){b.__ligado=true;b.addEventListener("click",abrirNoNavegador)}
+  }
+  function abrirPerfilAutomaticamente(){
+    try{
+      var q=new URLSearchParams(location.search);
+      var tel=q.get("telefone");
+      if(q.get("foto_perfil")==="1"&&digits(tel).length===11){
+        localStorage.setItem(PHONE_KEY,tel);
+        setTimeout(function(){
+          var pm=document.querySelector('[data-menu-acao="perfil"]');
+          if(pm)pm.click();
+        },1200);
+      }
+    }catch(e){}
+  }
+  function iniciar(){
+    abrirPerfilAutomaticamente();
+    preparar();
+    prepararBotaoNavegador();
+    var pm=document.querySelector('[data-menu-acao="perfil"]');
+    if(pm)pm.addEventListener("click",function(){setTimeout(function(){preparar();carregar();prepararBotaoNavegador()},120)},true);
+    var obs=new MutationObserver(function(){preparar();prepararBotaoNavegador()});
+    if(document.body)obs.observe(document.body,{childList:true,subtree:true})
+  }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(iniciar,700)});else setTimeout(iniciar,700)
 })();
 </script>
