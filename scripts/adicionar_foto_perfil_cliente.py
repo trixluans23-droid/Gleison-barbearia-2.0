@@ -96,7 +96,10 @@ code = r'''
       '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;display:block">'+
       '</label>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
-    document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});
+    var fotoInput=document.getElementById("gc-foto-perfil-input");
+    var fotoBtn=document.getElementById("gc-foto-perfil-salvar");
+    if(fotoInput){fotoInput.addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});}
+    if(fotoBtn&&fotoInput){fotoBtn.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();try{if(typeof fotoInput.showPicker==="function"){fotoInput.showPicker();return}}catch(x){}fotoInput.click();});}
     carregar()
   }
   function abrirNoNavegador(){
