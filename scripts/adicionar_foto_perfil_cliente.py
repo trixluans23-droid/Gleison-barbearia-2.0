@@ -92,8 +92,9 @@ code = r'''
     var wrap=document.createElement("div");wrap.className="gc-foto-perfil-wrap";
     wrap.innerHTML='<img id="gc-foto-perfil-preview" class="gc-foto-perfil-preview gc-foto-perfil-placeholder" alt="Sem foto" src="" />'+
       '<label style="width:100%;margin:0">Foto do perfil</label>'+
-      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" style="display:none">'+
-      '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Adicionar / alterar foto</button>';
+      '<label id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn" style="display:block;position:relative;text-align:center;cursor:pointer;overflow:hidden">📷 Adicionar / alterar foto'+
+      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;display:block">'+
+      '</label>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
     document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});
     carregar()
