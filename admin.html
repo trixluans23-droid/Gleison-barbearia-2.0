@@ -2295,10 +2295,13 @@ async function carregarNotificacoesAdmin(){
       return;
     }
     const cards=await Promise.all(itens.map(async n=>{
-      let caminhoFoto=n.foto_url||'';
-      if(!caminhoFoto && n.cliente_telefone && typeof buscarFotoPorTelefoneAdmin==='function'){
-        caminhoFoto=await buscarFotoPorTelefoneAdmin(n.cliente_telefone);
+      // A RPC retorna o telefone no campo "telefone".
+      // Sempre consulta a foto atual do cadastro para refletir uma troca feita pelo cliente.
+      let caminhoFoto='';
+      if(n.telefone && typeof buscarFotoPorTelefoneAdmin==='function'){
+        caminhoFoto=await buscarFotoPorTelefoneAdmin(n.telefone);
       }
+      if(!caminhoFoto) caminhoFoto=n.foto_url||'';
       const foto=await criarUrlFotoAdmin(caminhoFoto);
       const nome=n.cliente_nome||'Cliente';
       const avatar=foto
