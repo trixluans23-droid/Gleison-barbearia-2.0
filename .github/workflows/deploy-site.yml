@@ -1620,7 +1620,8 @@ jobs:
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",aplicar);
             else aplicar();
-            new MutationObserver(function(){aplicar();}).observe(document.body,{childList:true,subtree:true});
+            // Não observar o body: aplicar() altera classes dos próprios badges e o observer
+            // pode entrar em ciclo de mutações no Android WebView ao abrir Minha agenda.
             setInterval(aplicar,1000);
           })();
           </script>
