@@ -2517,8 +2517,7 @@ async function atualizarHorariosAdmin(){
     return '<option value="'+x.hh+'" '+(indisponivel?'disabled':'')+'>'+texto+'</option>';
   }).join('');
 
-  const primeira=horarios.find(x=>!x.ocupado && !x.passado);
-  if(primeira) sel.value=primeira.hh;
+  // Não selecionar horário automaticamente. O administrador deve escolher.
 }
 
 async function agendarClienteAdmin(){
