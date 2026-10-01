@@ -1527,7 +1527,7 @@ async function carregarHorariosRemarcacaoAdmin(data, id){
   if(!select) return;
 
   const motivoStatus=String(st&&st.motivo||'');
-  const aindaNaoAbriu=!st?.aberta && /^A barbearia ainda não abriu\\. Abre às /i.test(motivoStatus);
+  const aindaNaoAbriu=!st?.aberta && motivoStatus.toLowerCase().startsWith('a barbearia ainda não abriu');
   if(!st || (st.aberta===false && !aindaNaoAbriu)){
     select.disabled=true;
     select.innerHTML='<option value="">Nenhum horário — barbearia fechada neste dia</option>';
@@ -1657,7 +1657,7 @@ window.remarcarAgendamentoAdmin = function(id){
       // O administrador pode remarcar, por exemplo, às 11:00 mesmo que agora sejam 09:30.
       // Continuam bloqueados domingos, segundas, fechamentos excepcionais e fechamento manual.
       const motivoStatus=String(st&&st.motivo||'');
-      const aindaNaoAbriu=!st?.aberta && /^A barbearia ainda não abriu\\. Abre às /i.test(motivoStatus);
+      const aindaNaoAbriu=!st?.aberta && motivoStatus.toLowerCase().startsWith('a barbearia ainda não abriu');
       const diaSemanaSelecionado=diaSemanaAdmin(data);
       const fechadoPorDia=!st || (
         st.aberta===false &&
