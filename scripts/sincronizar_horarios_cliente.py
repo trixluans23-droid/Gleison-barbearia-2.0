@@ -109,19 +109,12 @@ s=s[:old2.start()]+new2+s[old2.end():]
 # Carrega a configuração antes de renderizar a agenda.
 open_marker="async function openBooking(){"
 if open_marker in s and "await carregarHorariosFuncionamentoCliente();" not in s[s.index(open_marker):s.index(open_marker)+500]:
-    s=s.replace(open_marker,open_marker+"
-  await carregarHorariosFuncionamentoCliente();
-  const dataInicial=document.getElementById('date')?.value;
-  if(dataInicial) await carregarExcecaoFuncionamentoCliente(dataInicial);",1)
+    s=s.replace(open_marker,open_marker+"\n  await carregarHorariosFuncionamentoCliente();\n  const dataInicial=document.getElementById('date')?.value;\n  if(dataInicial) await carregarExcecaoFuncionamentoCliente(dataInicial);",1)
 
 # Recarrega a configuração sempre que o cliente troca a data.
-needle="if(dateInput) dateInput.addEventListener('change', async function(){
-  selectedTime="";"
+needle="if(dateInput) dateInput.addEventListener('change', async function(){\n  selectedTime="";"
 if needle in s:
-    s=s.replace(needle,"if(dateInput) dateInput.addEventListener('change', async function(){
-  selectedTime="";
-  await carregarHorariosFuncionamentoCliente();
-  await carregarExcecaoFuncionamentoCliente(dateInput.value);",1)
+    s=s.replace(needle,"if(dateInput) dateInput.addEventListener('change', async function(){\n  selectedTime="";\n  await carregarHorariosFuncionamentoCliente();\n  await carregarExcecaoFuncionamentoCliente(dateInput.value);",1)
 
 p.write_text(s,encoding="utf-8")
 print("OK")
