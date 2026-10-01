@@ -47,11 +47,11 @@ public class GleisonAndroidBridge {
             f.setTimeZone(java.util.TimeZone.getTimeZone("America/Sao_Paulo"));
             java.util.Date d = f.parse(normalized.length() >= 19 ? normalized.substring(0,19) : normalized + ":00");
             if (d == null) return;
-            long trigger = d.getTime() - 2L * 60L * 1000L;
+            long trigger = d.getTime() - 3L * 60L * 1000L;
             if (trigger <= System.currentTimeMillis()) return;
             Intent intent = new Intent(context, GleisonReminderReceiver.class);
             intent.putExtra("titulo", titulo == null ? "Gleison Barbearia" : titulo);
-            intent.putExtra("corpo", corpo == null ? "Seu horário é em aproximadamente 2 minutos." : corpo);
+            intent.putExtra("corpo", corpo == null ? "Seu horário é em aproximadamente 3 minutos." : corpo);
             int requestCode = Math.abs((iso + (titulo == null ? "" : titulo)).hashCode());
             PendingIntent pi = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -143,7 +143,7 @@ if "MODO_TESTE_LEMBRETE_2_MIN" not in h:
   window.GLEISON_TESTE_LEMBRETE_2_MIN = true;
   var aviso = document.createElement('div');
   aviso.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;z-index:99999;background:#111;color:#fff;padding:8px;border-radius:8px;font-size:12px;text-align:center';
-  aviso.textContent='MODO TESTE: lembrete em 2 minutos';
+  aviso.textContent='MODO TESTE: lembrete em 3 minutos';
   document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(aviso);});
 })();
 </script></body>""")
