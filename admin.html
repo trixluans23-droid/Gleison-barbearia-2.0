@@ -747,6 +747,9 @@ async function alterarSenhaAdmin(){
 
 async function criarUrlFoto(path){
   if(!path) return '';
+  // Fotos dos clientes são salvas como Data URL no cadastro.
+  // Não tente assinar uma Data URL como se fosse um objeto do Storage.
+  if(String(path).startsWith('data:image/')) return String(path);
   const resposta = await fetch(SUPABASE_URL + '/storage/v1/object/sign/fotos-clientes/' + path.split('/').map(encodeURIComponent).join('/'), {
     method: 'POST',
     headers: {
