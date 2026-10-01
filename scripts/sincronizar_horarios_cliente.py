@@ -50,6 +50,9 @@ s = s.replace(old_limite, new_limite, 1)
 
 # Usa a abertura configurada também na variável de início da agenda.
 s = s.replace('const inicio=9*60;', 'const inicio=inicioAgenda;')
+
+# Corrige aspas escapadas no HTML do histórico do cliente para manter o JavaScript válido.
+s = s.replace("\\\\'", "\\'")
 # Garante que o bloco real de renderTimes() nunca volte a ignorar a abertura configurada.
 s = s.replace('const inicio=9*60;\\n    const horarios=[];', 'const inicio=inicioAgenda;\\n    const horarios=[];')
 
