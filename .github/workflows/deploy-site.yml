@@ -278,6 +278,8 @@ jobs:
           s=s.replace(old_confirm,new_confirm,1)
 
           p.write_text(s,encoding="utf-8")
+          # O site ainda precisa receber o index já corrigido; o primeiro copy ocorre antes desta etapa.
+          Path("site/index.html").write_text(s,encoding="utf-8")
           print("Agenda do cliente agora lê abertura/fechamento do administrador e exceções por data.")
           PY
 
