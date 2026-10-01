@@ -2045,7 +2045,7 @@ async function restaurarPadraoDiaAdmin(){
   botoes.forEach(b=>{if(b)b.disabled=true;});
   if(msg) msg.innerHTML='<div class="small">⏳ Restaurando...</div>';
   try{
-    const resultado=await chamarRPC('remover_excecao_funcionamento',{p_data:data});
+    const resultado=await chamarRPC('restaurar_excecao_funcionamento',{p_data:data});
     if(resultado!==true && resultado!=='true') throw new Error('Não foi possível restaurar o padrão.');
     if(msg) msg.innerHTML='<div class="success">✓ Funcionamento padrão restaurado.</div>';
     await carregarStatusExcecaoAdmin();
