@@ -1156,6 +1156,9 @@ async function enviarFotoBarbeiro(event){
 
 async function criarUrlFotoAdmin(path){
   if(!path) return '';
+  // A foto do cliente pode estar salva como Data URL (base64).
+  // Nesse caso não existe objeto no Storage para assinar: use a própria imagem.
+  if(String(path).startsWith('data:image/')) return String(path);
   try{
     const resposta=await fetch(SUPABASE_URL + '/storage/v1/object/sign/fotos-clientes/' + path.split('/').map(encodeURIComponent).join('/'),{
       method:'POST',
