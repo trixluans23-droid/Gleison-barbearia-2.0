@@ -8,6 +8,7 @@ on:
       - 'GleisonBarbearia_2.0_V27_FCM.zip'
       - 'admin.html'
       - '.github/workflows/deploy-site.yml'
+      - 'scripts/sincronizar_horarios_cliente.py'
 
 permissions:
   contents: read
