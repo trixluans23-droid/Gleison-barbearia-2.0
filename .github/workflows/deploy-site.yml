@@ -9,6 +9,7 @@ on:
       - 'admin.html'
       - '.github/workflows/deploy-site.yml'
       - 'scripts/sincronizar_horarios_cliente.py'
+      - 'scripts/adicionar_foto_perfil_cliente.py'
 
 permissions:
   contents: read
@@ -648,6 +649,10 @@ jobs:
           print("Cadastro único do cliente adicionado.")
           PY
 
+
+      - name: Permitir que o cliente altere a própria foto
+        run: |
+          python3 scripts/adicionar_foto_perfil_cliente.py
 
       - name: Histórico do cliente
         run: |
