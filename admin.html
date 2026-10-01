@@ -904,7 +904,11 @@ async function verPeriodo(tipo){
     const resultados=await Promise.all(datas.map(d=>chamarRPC('listar_agenda_admin_foto',{p_data:d})));
     const rows=resultados.flat().filter(Boolean);
     const atendidos=rows.filter(a=>a.status==='atendido');
-    const total=atendidos.reduce((s,a)=>s+precoServico(a.servico || a.servico_nome),0);
+    // O financeiro precisa carregar a tabela de preços antes de calcular.
+    // A agenda retorna o nome do serviço em servico_nome; sem o cache,
+    // precoServico() poderia retornar R$ 0,00 mesmo com atendimentos.
+    await carregarServicosAdmin();
+    const total=atendidos.reduce((s,a)=>s+precoServico(a.servico_nome || a.servico),0);
     const fmt=d=>d.toLocaleDateString('pt-BR');
     const nome=tipo==='dia'?'Dia':tipo==='semana'?'Semana':'Mês';
     info.textContent=`${nome}: ${fmt(inicio)} a ${fmt(fim)}`;
