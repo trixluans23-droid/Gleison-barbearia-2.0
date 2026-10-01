@@ -77,11 +77,6 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 .message-compose-admin{display:flex;gap:8px;margin-top:12px;align-items:flex-end;flex-wrap:wrap}
 .message-compose-admin textarea{flex:1;min-width:180px;min-height:48px;max-height:120px;resize:vertical;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b0d0f;color:#fff;font-family:inherit}
 .message-compose-admin button{min-width:90px}
-.audio-admin-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;margin-top:4px}
-.audio-admin-btn{font-weight:900}
-.audio-admin-btn.recording{background:#d92d2d!important;color:#fff!important}
-.audio-admin-status{font-size:12px;color:var(--muted)}
-.admin-audio-player{width:min(100%,360px);height:40px;margin-top:6px}
 .message-client-card{margin-top:10px;cursor:pointer}
 .message-client-card.active{border-color:var(--gold)}
 .message-client-head{display:flex;gap:10px;align-items:center}
@@ -391,10 +386,7 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div class="message-compose-admin">
 <textarea id="respostaMensagem" maxlength="1000" placeholder="Digite sua resposta..."></textarea>
 <button class="btn primary" onclick="responderMensagem()">Enviar</button>
-<div class="audio-admin-row">
-<button class="btn audio-admin-btn" id="gravarAudioAdminBtn" onclick="alternarGravacaoAdmin()" type="button">🎤 Gravar áudio</button>
-<span class="audio-admin-status" id="audioAdminStatus">Toque para gravar um áudio.</span>
-</div>
+
 </div>
 </div>
 </div></div><div class="admin-view" id="viewConta"><button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button><div class="card conta-card">
@@ -1310,11 +1302,9 @@ async function abrirConversaAdmin(clienteId){
     const autor=m.remetente==='cliente'?'Cliente':'Gleison Barbearia';
     return `<div class="${classe}">
       <div>${escapeHtml(m.mensagem || '')}</div>
-      ${m.audio_url ? `<audio class="admin-audio-player" controls preload="metadata" data-audio-path="${escapeHtml(m.audio_url)}"></audio>` : ''}
       <div class="message-meta-admin">${escapeHtml(autor)} • ${escapeHtml(formatarMensagemData(m.criado_em))}</div>
     </div>`;
   }).join('');
-  await prepararAudiosAdmin();
   area.scrollTop=area.scrollHeight;
   try{
     await chamarRPC('marcar_mensagens_lidas_admin',{p_cliente_id:clienteId});
@@ -1325,194 +1315,6 @@ async function abrirConversaAdmin(clienteId){
 }
 
 
-let gravadorAdmin=null;
-let partesAudioAdmin=[];
-let streamAudioAdmin=null;
-let gravandoAudioAdmin=false;
-
-function definirStatusAudioAdmin(texto, erro=false){
-  const el=document.getElementById('audioAdminStatus');
-  if(el){
-    el.textContent=texto;
-    el.style.color=erro ? '#ff6b6b' : '';
-  }
-}
-
-function escolherMimeAudioAdmin(){
-  const opcoes=[
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4'
-  ];
-  for(const tipo of opcoes){
-    if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(tipo)) return tipo;
-  }
-  return '';
-}
-
-async function alternarGravacaoAdmin(){
-  if(gravandoAudioAdmin){
-    pararGravacaoAdmin();
-    return;
-  }
-
-  if(!clienteMensagemSelecionado){
-    showToastAdmin('Selecione uma conversa primeiro.');
-    return;
-  }
-
-  if(!window.isSecureContext){
-    definirStatusAudioAdmin('Abra este painel pelo GitHub Pages (HTTPS). O microfone não funciona em arquivo baixado.', true);
-    showToastAdmin('Microfone precisa de HTTPS.');
-    return;
-  }
-
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
-    definirStatusAudioAdmin('Este navegador não permite gravação de áudio.', true);
-    showToastAdmin('Gravação não disponível neste navegador.');
-    return;
-  }
-
-  try{
-    definirStatusAudioAdmin('Solicitando acesso ao microfone...');
-    streamAudioAdmin=await navigator.mediaDevices.getUserMedia({audio:true});
-    const mime=escolherMimeAudioAdmin();
-    gravadorAdmin=mime ? new MediaRecorder(streamAudioAdmin,{mimeType:mime}) : new MediaRecorder(streamAudioAdmin);
-    partesAudioAdmin=[];
-    gravandoAudioAdmin=true;
-
-    gravadorAdmin.ondataavailable=(e)=>{
-      if(e.data && e.data.size>0) partesAudioAdmin.push(e.data);
-    };
-
-    gravadorAdmin.onstop=async()=>{
-      const tipo=gravadorAdmin && gravadorAdmin.mimeType ? gravadorAdmin.mimeType : (mime || 'audio/webm');
-      const extensao=tipo.includes('mp4')?'mp4':'webm';
-      const blob=new Blob(partesAudioAdmin,{type:tipo});
-      if(streamAudioAdmin){
-        streamAudioAdmin.getTracks().forEach(t=>t.stop());
-        streamAudioAdmin=null;
-      }
-      gravandoAudioAdmin=false;
-      const botao=document.getElementById('gravarAudioAdminBtn');
-      if(botao){
-        botao.disabled=true;
-        botao.classList.remove('recording');
-        botao.textContent='⏳ Enviando áudio...';
-      }
-      definirStatusAudioAdmin('Enviando áudio...');
-
-      try{
-        if(!blob.size) throw new Error('Gravação vazia');
-
-        const nome='barbeiro/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+extensao;
-        const resposta=await fetch(
-          SUPABASE_URL+'/storage/v1/object/audios-mensagens/'+nome,
-          {
-            method:'POST',
-            headers:{
-              'Content-Type':tipo,
-              'apikey':SUPABASE_PUBLISHABLE_KEY,
-              'Authorization':'Bearer '+ACCESS_TOKEN,
-              'x-upsert':'false'
-            },
-            body:blob
-          }
-        );
-        const texto=await resposta.text();
-        if(!resposta.ok) throw new Error('Storage '+resposta.status+': '+texto);
-
-        await chamarRPC('enviar_audio_barbeiro',{
-          p_cliente_id:clienteMensagemSelecionado,
-          p_audio_url:nome
-        });
-
-        showToastAdmin('Áudio enviado!');
-        definirStatusAudioAdmin('Áudio enviado. Toque novamente para gravar outro.');
-        await carregarMensagensAdmin();
-      }catch(e){
-        console.error(e);
-        definirStatusAudioAdmin('Não foi possível enviar o áudio.', true);
-        showToastAdmin('Não foi possível enviar o áudio.');
-      }finally{
-        const b=document.getElementById('gravarAudioAdminBtn');
-        if(b){
-          b.disabled=false;
-          b.classList.remove('recording');
-          b.textContent='🎤 Gravar áudio';
-        }
-      }
-    };
-
-    gravadorAdmin.start();
-    const botao=document.getElementById('gravarAudioAdminBtn');
-    if(botao){
-      botao.classList.add('recording');
-      botao.textContent='⏹️ Parar gravação';
-    }
-    definirStatusAudioAdmin('🔴 Gravando... toque em “Parar gravação” quando terminar.');
-  }catch(e){
-    console.error(e);
-    gravandoAudioAdmin=false;
-    if(streamAudioAdmin){
-      streamAudioAdmin.getTracks().forEach(t=>t.stop());
-      streamAudioAdmin=null;
-    }
-    definirStatusAudioAdmin('Microfone bloqueado. No Chrome: toque no ícone ao lado do endereço > Permissões > Microfone > Permitir e recarregue a página.', true);
-    showToastAdmin('Permita o microfone nas permissões deste site e tente novamente.');
-  }
-}
-
-function pararGravacaoAdmin(){
-  if(gravadorAdmin && gravadorAdmin.state!=='inactive'){
-    gravadorAdmin.stop();
-  }else{
-    gravandoAudioAdmin=false;
-    if(streamAudioAdmin){
-      streamAudioAdmin.getTracks().forEach(t=>t.stop());
-      streamAudioAdmin=null;
-    }
-  }
-}
-
-async function criarUrlAudioAdmin(path){
-  if(!path) return '';
-  if(String(path).startsWith('http')) return path;
-  try{
-    const resposta=await fetch(
-      SUPABASE_URL+'/storage/v1/object/sign/audios-mensagens/'+
-      String(path).split('/').map(encodeURIComponent).join('/'),
-      {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'apikey':SUPABASE_PUBLISHABLE_KEY,
-          'Authorization':'Bearer '+ACCESS_TOKEN
-        },
-        body:JSON.stringify({expiresIn:3600})
-      }
-    );
-    if(!resposta.ok) return '';
-    const dados=await resposta.json();
-    if(!dados || !dados.signedURL) return '';
-    return dados.signedURL.startsWith('http') ? dados.signedURL : SUPABASE_URL+'/storage/v1'+dados.signedURL;
-  }catch(e){
-    console.error(e);
-    return '';
-  }
-}
-
-async function prepararAudiosAdmin(){
-  const players=document.querySelectorAll('.admin-audio-player[data-audio-path]');
-  for(const player of players){
-    const url=await criarUrlAudioAdmin(player.dataset.audioPath||'');
-    if(url){
-      player.src=url;
-    }else{
-      player.style.display='none';
-    }
-  }
-}
 
 async function responderMensagem(){
   const input=document.getElementById('respostaMensagem');
