@@ -2539,7 +2539,10 @@ async function agendarClienteAdmin(){
   btn.disabled=true; btn.textContent='Agendando...'; msg.innerHTML='';
   try{
     const dataHora=data+'T'+hora+':00';
-    const resultado=await chamarRPC('criar_agendamento',{
+    // O administrador pode cadastrar um cliente para um horário futuro
+    // antes da abertura. Não usar criar_agendamento aqui, pois essa RPC
+    // bloqueia o dia enquanto a barbearia ainda não abriu.
+    const resultado=await chamarRPC('agendar_cliente_admin',{
       p_nome:nome,
       p_telefone:telefone,
       p_data_hora:dataHora,
@@ -2551,8 +2554,9 @@ async function agendarClienteAdmin(){
     document.getElementById('adminAgTelefone').value='';
     mostrarTelaAdmin('agendar');
   }catch(e){
-    console.error(e);
-    msg.innerHTML='<div class="error">Não foi possível agendar. Esse horário pode já estar ocupado.</div>';
+    console.error('Erro ao agendar cliente pelo painel:',e);
+    const detalhe=e && e.message ? e.message.replace(/^Supabase\\s+\\d+:\\s*/,'') : '';
+    msg.innerHTML='<div class="error">'+(detalhe || 'Não foi possível agendar o cliente. Verifique a disponibilidade e tente novamente.')+'</div>';
   }finally{
     btn.disabled=false; btn.textContent='📅 Confirmar agendamento';
   }
