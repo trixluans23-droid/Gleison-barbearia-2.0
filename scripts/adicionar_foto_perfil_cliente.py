@@ -92,14 +92,11 @@ code = r'''
     var wrap=document.createElement("div");wrap.className="gc-foto-perfil-wrap";
     wrap.innerHTML='<img id="gc-foto-perfil-preview" class="gc-foto-perfil-preview gc-foto-perfil-placeholder" alt="Sem foto" src="" />'+
       '<label style="width:100%;margin:0">Foto do perfil</label>'+
-      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*">'+
-      '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Alterar minha foto</button>'+
-      '<button type="button" id="gc-foto-perfil-navegador" class="gc-foto-perfil-btn" style="background:#20252a!important;color:#fff!important;border:1px solid #555">🌐 Usar galeria no navegador</button>'+
-      '<div id="gc-foto-perfil-link-box" style="display:none;width:100%;padding:10px;border:1px solid #444;border-radius:10px;background:#171c20;font-size:12px;line-height:1.4">'+
-      'Abra o Chrome e cole o link copiado:<br><a id="gc-foto-perfil-link" href="#" style="color:#f2c14e;word-break:break-all"></a></div>';
+      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" style="display:none">'+
+      '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Adicionar / alterar foto</button>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
-    document.getElementById("gc-foto-perfil-salvar").addEventListener("click",salvar);
-    document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f)preview(URL.createObjectURL(f))});
+    document.getElementById("gc-foto-perfil-salvar").addEventListener("click",function(){document.getElementById("gc-foto-perfil-input").click()});
+    document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f){preview(URL.createObjectURL(f));salvar()}});
     carregar()
   }
   function abrirNoNavegador(){
@@ -138,10 +135,9 @@ code = r'''
   function iniciar(){
     abrirPerfilAutomaticamente();
     preparar();
-    prepararBotaoNavegador();
     var pm=document.querySelector('[data-menu-acao="perfil"]');
-    if(pm)pm.addEventListener("click",function(){setTimeout(function(){preparar();carregar();prepararBotaoNavegador()},120)},true);
-    var obs=new MutationObserver(function(){preparar();prepararBotaoNavegador()});
+    if(pm)pm.addEventListener("click",function(){setTimeout(function(){preparar();carregar()},120)},true);
+    var obs=new MutationObserver(function(){preparar()});
     if(document.body)obs.observe(document.body,{childList:true,subtree:true})
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(iniciar,700)});else setTimeout(iniciar,700)
