@@ -1114,10 +1114,14 @@ jobs:
 
             function status(card){
               var t=norm(card.innerText).toLowerCase();
-              if(/\bagendado\b/.test(t)||/\bconfirmado\b/.test(t))return 0;
-              if(/\batendido\b/.test(t)||/\batendimento encerrado\b/.test(t)||/\bnão compareceu\b/.test(t))return 1;
-              if(/\bcancelado\b/.test(t))return 2;
-              return 3;
+              var dt=getDate(t);
+              var futuro=dt && dt.getTime()>=Date.now();
+              if((/\bagendado\b/.test(t)||/\bconfirmado\b/.test(t)) && futuro)return 0;
+              if(/\batendido\b/.test(t)||/\batendimento encerrado\b/.test(t))return 1;
+              if(/\bnão compareceu\b/.test(t)||/\bfaltou\b/.test(t))return 2;
+              if(/\bcancelado\b/.test(t))return 3;
+              if(/\bagendado\b/.test(t)||/\bconfirmado\b/.test(t))return 1;
+              return 4;
             }
 
             function sort(){
@@ -1230,10 +1234,17 @@ jobs:
               return isNaN(d.getTime())?null:d;
             }
 
+            function dataHoraAgenda(a){
+              var raw=a && a.data_hora;
+              var ms=raw ? new Date(raw).getTime() : NaN;
+              if(Number.isFinite(ms))return new Date(ms);
+              return parseDate(typeof formatDateTime==="function"?formatDateTime(raw):"");
+            }
+
             function statusFinal(a){
-              var raw=String(a.status||"agendado").toLowerCase();
-              var dt=parseDate(typeof formatDateTime==="function"?formatDateTime(a.data_hora):"");
-              if(dt && dt.getTime()<Date.now() && raw!=="cancelado" && raw!=="atendido" && raw!=="faltou"){
+              var raw=String(a.status||"agendado").toLowerCase().trim();
+              var dt=dataHoraAgenda(a);
+              if(dt && dt.getTime()<Date.now() && raw!=="cancelado" && raw!=="atendido" && raw!=="faltou" && raw!=="não compareceu"){
                 return "Atendimento encerrado";
               }
               return typeof statusLabel==="function" ? statusLabel(a.status) : (a.status||"Agendado");
@@ -1265,16 +1276,33 @@ jobs:
                 data.sort(function(a,b){
                   function ordem(item){
                     var st=statusFinal(item).toLowerCase();
-                    if(st==="agendado"||st==="confirmado")return 0;
-                    if(st==="atendimento encerrado")return 1;
-                    if(st==="atendido")return 2;
-                    if(st==="faltou"||st==="não compareceu")return 3;
-                    if(st==="cancelado")return 4;
-                    return 5;
+                    var raw=String(item.status||"").toLowerCase().trim();
+                    var dt=dataHoraAgenda(item);
+                    var futuro=dt && dt.getTime()>=Date.now();
+
+                    // Próximos agendamentos/confirmados sempre ficam primeiro.
+                    if((raw==="agendado"||raw==="confirmado") && futuro)return 0;
+
+                    // Atendimentos encerrados ficam depois dos próximos.
+                    if(st==="atendimento encerrado"||st==="atendido")return 1;
+
+                    // Faltou/não compareceu ficam no histórico.
+                    if(st==="faltou"||st==="não compareceu")return 2;
+
+                    // Cancelados ficam por último.
+                    if(st==="cancelado")return 3;
+
+                    // Agendamentos que já passaram também são histórico.
+                    if(raw==="agendado"||raw==="confirmado")return 1;
+
+                    return 4;
                   }
                   var oa=ordem(a),ob=ordem(b);
                   if(oa!==ob)return oa-ob;
-                  return new Date(a.data_hora).getTime()-new Date(b.data_hora).getTime();
+                  var da=dataHoraAgenda(a),db=dataHoraAgenda(b);
+                  var ta=da?da.getTime():Number.MAX_SAFE_INTEGER;
+                  var tb=db?db.getTime():Number.MAX_SAFE_INTEGER;
+                  return ta-tb;
                 });
 
                 if(!data.length){
@@ -1287,7 +1315,9 @@ jobs:
                   var cls=st==="Atendimento encerrado"?" status-atendimento-encerrado":"";
                   var statusCor=String(st||"").toLowerCase();
                   var estiloBadge=statusCor==="cancelado"?' style="background:#e53955!important;color:#fff!important;border-color:#e53955!important"':((statusCor==="agendado"||statusCor==="confirmado")?' style="background:#f2c14e!important;color:#171717!important;border-color:#f2c14e!important"':(statusCor==="atendido"?' style="background:#4dcc83!important;color:#171717!important;border-color:#4dcc83!important"':''));
-                  var ativo=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
+                  var dataAgendamento=dataHoraAgenda(a);
+                  var ativoStatus=(String(a.status||"").toLowerCase()==="agendado" || String(a.status||"").toLowerCase()==="confirmado");
+                  var ativo=ativoStatus && dataAgendamento && dataAgendamento.getTime()>=Date.now();
                   var botoes=ativo ?
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+
                     '<button class="btn secondary" style="padding:10px" type="button" onclick="openReschedule(\\''+escapeHtml(a.id)+'\\',\\''+escapeHtml(a.data_hora)+'\\')">Remarcar</button>'+
