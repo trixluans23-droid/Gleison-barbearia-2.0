@@ -1315,15 +1315,33 @@ jobs:
               }
             };
 
-            window.atualizarAgendaClienteAgora=function(btn){
+            window.atualizarAgendaClienteAgora=async function(btn){
               if(btn){
                 btn.disabled=true;
                 btn.textContent="↻ Atualizando...";
               }
 
-              // Recarrega a página inteira para buscar a versão mais recente publicada.
-              // Apenas chamar loadMyAgenda() não atualiza o HTML/CSS já carregado no navegador.
-              window.location.replace(window.location.pathname+"?atualizar="+Date.now()+"&v=agenda");
+              try{
+                if(typeof window.loadMyAgenda==="function"){
+                  await window.loadMyAgenda();
+                }
+                if(typeof window.loadNotifications==="function"){
+                  try{ await window.loadNotifications(); }catch(e){}
+                }
+                if(btn){
+                  btn.textContent="✓ Atualizado";
+                  setTimeout(function(){
+                    btn.disabled=false;
+                    btn.textContent="↻ Atualizar";
+                  },900);
+                }
+              }catch(e){
+                console.error("Erro ao atualizar sem recarregar o app:",e);
+                if(btn){
+                  btn.disabled=false;
+                  btn.textContent="↻ Atualizar";
+                }
+              }
             };
 
             function ligarBotao(){
