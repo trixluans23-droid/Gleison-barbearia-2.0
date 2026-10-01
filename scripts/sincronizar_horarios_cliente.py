@@ -50,6 +50,8 @@ s = s.replace(old_limite, new_limite, 1)
 
 # Usa a abertura configurada também na variável de início da agenda.
 s = s.replace('const inicio=9*60;', 'const inicio=inicioAgenda;')
+# Garante que o bloco real de renderTimes() nunca volte a ignorar a abertura configurada.
+s = s.replace('const inicio=9*60;\\n    const horarios=[];', 'const inicio=inicioAgenda;\\n    const horarios=[];')
 
 # Usa a abertura configurada nos loops que ainda começavam às 09:00.
 s = s.replace('for(let m=9*60;', 'for(let m=inicioAgenda;')
