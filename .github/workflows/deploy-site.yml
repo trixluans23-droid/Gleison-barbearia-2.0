@@ -28,6 +28,22 @@ jobs:
       - name: Baixar código
         uses: actions/checkout@v4
 
+      - name: Identidade do site da Gleison Barbearia
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+          meta='''<meta name="theme-color" content="#171b1f"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="description" content="Gleison Barbearia — agendamento online e atendimento."><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'''
+          if 'name="theme-color"' not in s and "</head>" in s:
+              s=s.replace("</head>",meta+"</head>",1)
+          s=s.replace("<title>Gleison Barbearia</title>","<title>Gleison Barbearia | Agendamento Online</title>",1)
+          if "<title>" not in s and "</head>" in s:
+              s=s.replace("</head>","<title>Gleison Barbearia | Agendamento Online</title></head>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Identidade do site aplicada.")
+          PY
+
       - name: Preparar sistema
         run: |
           rm -rf GleisonBarbeariaAndroid
