@@ -285,6 +285,17 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div class="status-barbearia-sub" id="motivoBarbeariaTexto" style="margin-top:6px"></div>
 <button class="btn primary" id="btnStatusBarbearia" onclick="alternarStatusBarbearia()" style="width:100%;margin-top:14px;min-height:54px;font-size:17px;font-weight:900" type="button">Carregando...</button>
 </div>
+<div class="status-barbearia-card" id="horariosFuncionamentoCard" style="margin:0 0 18px;padding:16px;border:2px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 4px 18px rgba(0,0,0,.25)">
+<div style="font-weight:900;font-size:18px;margin-bottom:6px">🕐 Horários de funcionamento</div>
+<div class="small" style="margin-bottom:12px">Altere aqui os horários normais que serão usados pela agenda dos clientes e do administrador.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div><label for="horaAberturaAdmin">Abertura</label><input id="horaAberturaAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
+<div><label for="horaFechamentoAdmin">Terça a sexta — fechamento</label><input id="horaFechamentoAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
+</div>
+<div style="margin-top:10px"><label for="horaFechamentoSabadoAdmin">Sábado — fechamento</label><input id="horaFechamentoSabadoAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
+<button class="btn primary" id="btnSalvarHorariosAdmin" onclick="salvarHorariosFuncionamentoAdmin()" style="width:100%;margin-top:12px;min-height:50px;font-weight:900" type="button">💾 Salvar horários</button>
+<div id="horariosFuncionamentoMensagem" class="small" style="margin-top:9px;font-weight:800"></div>
+</div>
 <div class="status-barbearia-card" id="excecaoFuncionamentoCard" style="margin:0 0 18px;padding:16px;border:2px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 4px 18px rgba(0,0,0,.25)">
 <div style="font-weight:900;font-size:18px;margin-bottom:6px">📅 Alteração excepcional de funcionamento</div>
 <div class="small" style="margin-bottom:12px">Escolha um dia futuro. Você pode <b>abrir domingo/segunda</b> excepcionalmente ou <b>fechar qualquer dia</b> em que a barbearia não poderá trabalhar.</div>
@@ -528,10 +539,45 @@ function mostrarPainel(){
   document.getElementById('adminApp').style.display='block';
 }
 
+
+async function carregarHorariosFuncionamentoAdmin(){
+  const msg=document.getElementById('horariosFuncionamentoMensagem');
+  try{
+    const rows=await chamarRPC('obter_horarios_funcionamento',{});
+    const h=Array.isArray(rows)?rows[0]:rows;
+    if(!h) throw new Error('Horários não encontrados.');
+    document.getElementById('horaAberturaAdmin').value=String(h.hora_abertura||'').slice(0,5);
+    document.getElementById('horaFechamentoAdmin').value=String(h.hora_fechamento||'').slice(0,5);
+    document.getElementById('horaFechamentoSabadoAdmin').value=String(h.hora_fechamento_sabado||'').slice(0,5);
+    if(msg){msg.textContent='🟢 Horários atuais carregados.';msg.style.color='#5ee27a';}
+  }catch(e){
+    console.error(e);
+    if(msg){msg.textContent='⚠️ Não foi possível carregar os horários.';msg.style.color='#ff667a';}
+  }
+}
+
+async function salvarHorariosFuncionamentoAdmin(){
+  const abertura=document.getElementById('horaAberturaAdmin').value;
+  const fechamento=document.getElementById('horaFechamentoAdmin').value;
+  const fechamentoSabado=document.getElementById('horaFechamentoSabadoAdmin').value;
+  const btn=document.getElementById('btnSalvarHorariosAdmin');
+  const msg=document.getElementById('horariosFuncionamentoMensagem');
+  if(!abertura||!fechamento||!fechamentoSabado){msg.textContent='⚠️ Informe todos os horários.';msg.style.color='#ff667a';return;}
+  if(abertura>=fechamento){msg.textContent='⚠️ A abertura deve ser antes do fechamento de terça a sexta.';msg.style.color='#ff667a';return;}
+  if(abertura>=fechamentoSabado){msg.textContent='⚠️ A abertura deve ser antes do fechamento de sábado.';msg.style.color='#ff667a';return;}
+  try{
+    btn.disabled=true;btn.textContent='Salvando...';
+    await chamarRPC('definir_horarios_funcionamento',{p_hora_abertura:abertura+':00',p_hora_fechamento:fechamento+':00',p_hora_fechamento_sabado:fechamentoSabado+':00'});
+    msg.textContent='✅ Horários salvos. A agenda já passa a usar os novos horários.';msg.style.color='#5ee27a';
+  }catch(e){
+    console.error(e);msg.textContent='❌ '+(e.message||'Não foi possível salvar os horários.');msg.style.color='#ff667a';
+  }finally{btn.disabled=false;btn.textContent='💾 Salvar horários';}
+}
+
 async function inicializarPainelAdmin(){
   if(!ADMIN_AUTH_READY) return;
   document.getElementById('data').value=hojeLocal();
-  await Promise.allSettled([carregarServicosAdmin(),carregarFotoBarbeiro(),carregarStatusBarbearia(),carregarMensagensAdmin()]);
+  await Promise.allSettled([carregarServicosAdmin(),carregarFotoBarbeiro(),carregarStatusBarbearia(),carregarMensagensAdmin(),carregarHorariosFuncionamentoAdmin()]);
   await atualizarNotificacoesAdminSilencioso();
   if(!window.__intervalNotificacoesAdmin) window.__intervalNotificacoesAdmin=setInterval(atualizarNotificacoesAdminSilencioso,15000);
   iniciarControleExcecaoAdmin();
