@@ -53,7 +53,7 @@ code = r'''
     var wrap=document.createElement("div");wrap.className="gc-foto-perfil-wrap";
     wrap.innerHTML='<img id="gc-foto-perfil-preview" class="gc-foto-perfil-preview gc-foto-perfil-placeholder" alt="Sem foto" src="" />'+
       '<label style="width:100%;margin:0">Foto do perfil</label>'+
-      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" capture="user">'+
+      '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*">'+
       '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Alterar minha foto</button>'+
       '<button type="button" id="gc-foto-perfil-navegador" class="gc-foto-perfil-btn" style="background:#20252a!important;color:#fff!important;border:1px solid #555">🌐 Usar galeria no navegador</button>'+
       '<div id="gc-foto-perfil-link-box" style="display:none;width:100%;padding:10px;border:1px solid #444;border-radius:10px;background:#171c20;font-size:12px;line-height:1.4">'+
