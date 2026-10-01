@@ -283,8 +283,6 @@ jobs:
           print("Agenda do cliente agora lê abertura/fechamento do administrador e exceções por data.")
           PY
 
-      - name: Preparar sistema
-
       - name: Adicionar botão Atualizar
         run: |
           python3 - <<'PY'
