@@ -1196,10 +1196,7 @@ jobs:
               'id="btn-atualizar-online"',
               'id="menu-tres-pontos-online"',
               'data-menu-acao="perfil"',
-              'data-menu-acao="inicio"',
-              'data-menu-acao="agenda"',
-              'data-menu-acao="mensagens"',
-              'data-menu-acao="barbearia"',
+              'data-menu-acao="notificacoes"',
               'data-menu-acao="administrador"',
           ]
           missing = [x for x in required if x not in s]
@@ -1207,8 +1204,7 @@ jobs:
               raise SystemExit("Validação falhou; faltando: " + ", ".join(missing))
           if s.count('id="menu-tres-pontos-online"') != 1:
               raise SystemExit("Validação falhou: menu duplicado.")
-          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
-          menu_scripts = [x for x in scripts if 'function esconderNavegacaoInferior' in x]
+          menu_scripts = re.findall(r'<script[^>]*id="menu-tres-pontos-script"[^>]*>(.*?)</script>', s, flags=re.S|re.I)
           if len(menu_scripts) != 1:
               raise SystemExit("Validação falhou: script do menu não encontrado exatamente uma vez.")
           Path("/tmp/menu-check.js").write_text(menu_scripts[0], encoding="utf-8")
