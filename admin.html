@@ -2039,7 +2039,8 @@ async function restaurarPadraoDiaAdmin(){
   const data=document.getElementById('excecaoDataAdmin')?.value;
   const msg=document.getElementById('excecaoMensagemAdmin');
   if(!data) return;
-  if(!confirm('Restaurar o funcionamento padrão de '+nomeDiaAdmin(data)+' '+data.split('-').reverse().join('/')+'?')) return;
+  // Não usar window.confirm aqui: no WebView/Android o diálogo pode não aparecer,
+  // fazendo o botão parecer que não responde. O clique já confirma a restauração.
   const botoes=['btnAbrirExcecaoAdmin','btnFecharExcecaoAdmin','btnRestaurarExcecaoAdmin'].map(id=>document.getElementById(id));
   botoes.forEach(b=>{if(b)b.disabled=true;});
   if(msg) msg.innerHTML='<div class="small">⏳ Restaurando...</div>';
@@ -2051,9 +2052,11 @@ async function restaurarPadraoDiaAdmin(){
     await carregarCalendarioFechamentosAdmin();
   }catch(e){
     console.error(e);
-    if(msg) msg.innerHTML='<div class="error">Não foi possível restaurar o padrão.</div>';
+    if(msg) msg.innerHTML='<div class="error">❌ Não foi possível restaurar o padrão: '+escapeHtml(e?.message||'erro desconhecido')+'</div>';
     await carregarStatusExcecaoAdmin();
     await carregarCalendarioFechamentosAdmin();
+  }finally{
+    // O estado correto dos três botões é recalculado por carregarStatusExcecaoAdmin().
   }
 }
 
