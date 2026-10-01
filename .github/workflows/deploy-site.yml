@@ -963,26 +963,15 @@ jobs:
             }
 
             function getCards(){
-              var dateNodes=Array.prototype.slice.call(document.querySelectorAll("body *")).filter(function(el){
-                var t=norm(el.textContent);
-                return /(\d{2})\/(\d{2})\/(\d{4})\s*[•·]\s*(\d{2}):(\d{2})/.test(t);
+              var agenda=document.getElementById("agendaList");
+              if(!agenda)return [];
+              return Array.prototype.slice.call(agenda.querySelectorAll(".card")).filter(function(el){
+                var t=norm(el.innerText);
+                return /Cliente:\s*/i.test(t) &&
+                       /\bAgendado\b/i.test(t) &&
+                       /(Remarcar|Cancelar)/i.test(t) &&
+                       getDate(t);
               });
-
-              var found=[];
-              dateNodes.forEach(function(node){
-                var el=node;
-                for(var i=0;i<7 && el;i++,el=el.parentElement){
-                  var t=norm(el.innerText);
-                  if(/Cliente:\s*/i.test(t) &&
-                     /\bAgendado\b/i.test(t) &&
-                     /(Remarcar|Cancelar)/i.test(t) &&
-                     getDate(t)){
-                    if(found.indexOf(el)<0) found.push(el);
-                    break;
-                  }
-                }
-              });
-              return found;
             }
 
             function findStatus(card){
