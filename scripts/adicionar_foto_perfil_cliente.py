@@ -69,7 +69,7 @@ code = r'''
     var box=document.getElementById("gc-foto-perfil-link-box");
     var link=document.getElementById("gc-foto-perfil-link");
     if(box&&link){
-      link.href=alvo;
+      link.href=alvo; link.textContent=alvo;
       box.style.display="block";
       msg("Abra este link no Chrome para escolher sua foto.","gc-info");
       try{
