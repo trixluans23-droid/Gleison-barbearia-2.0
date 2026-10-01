@@ -1730,7 +1730,8 @@ window.remarcarAgendamentoAdmin = function(id){
     e.preventDefault();e.stopPropagation();
     const data=dataEl.value,hora=horaEl.value;
     if(!data||!hora) return;
-    if(!window.confirm('Remarcar para '+new Date(data+'T12:00:00').toLocaleDateString('pt-BR')+' às '+hora+'?')) return;
+    // Não usar window.confirm aqui: em WebView/Android ele pode não abrir
+    // e fazer o botão parecer sem resposta. A confirmação é feita diretamente.
     confirmarBtn.disabled=true;
     fecharBtn.disabled=true;
     confirmarBtn.textContent='⏳ Remarcando...';
