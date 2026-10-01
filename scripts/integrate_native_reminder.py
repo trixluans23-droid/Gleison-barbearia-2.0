@@ -126,14 +126,14 @@ html = Path("GleisonBarbeariaAndroid/app/src/main/assets/index.html")
 h = html.read_text(encoding="utf-8")
 if "GleisonAndroid.agendarLembrete" not in h:
     old = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    closeBooking();"
-    new = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){\n      window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos, às '+selectedTime+' — '+servico+'.');\n    }\n    closeBooking();"
+    new = "    localStorage.setItem('gleison_telefone', telefoneNumeros);\n    if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){\n      window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 3 minutos, às '+selectedTime+' — '+servico+'.');\n    }\n    closeBooking();"
     if old in h:
         h = h.replace(old, new, 1)
     else:
         marker = "closeBooking();"
         if marker not in h:
             raise SystemExit("Não encontrei o ponto de fechamento da tela de agendamento.")
-        h = h.replace(marker, "if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){ window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos.'); }\n    " + marker, 1)
+        h = h.replace(marker, "if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){ window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 3 minutos.'); }\n    " + marker, 1)
 # MODO_TESTE_LEMBRETE_2_MIN: libera temporariamente horários próximos no APK de teste.
 # O ajuste fica somente no asset do APK; o sistema online não é alterado.
 if "MODO_TESTE_LEMBRETE_2_MIN" not in h:
