@@ -40,7 +40,17 @@ code = r'''
   }
   async function carregar(){
     var tel=telefone(),client=sb(); if(digits(tel).length!==11||!client){preview("");return}
-    try{var r=await client.rpc("obter_foto_cliente",{p_telefone:tel});if(r.error)throw r.error;var row=Array.isArray(r.data)?(r.data[0]||null):r.data;preview(row&&row.foto_url?row.foto_url:"")}catch(e){console.warn("Foto do perfil:",e);preview("")}
+    try{
+      var r=await client.rpc("obter_foto_cliente",{p_telefone:tel});
+      if(r.error)throw r.error;
+      var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
+      var foto=row&&row.foto_url?String(row.foto_url):"";
+      if(foto && !/^https?:|^data:/i.test(foto)){
+        var pu=client.storage.from("fotos-clientes").getPublicUrl(foto);
+        foto=pu&&pu.data&&pu.data.publicUrl?pu.data.publicUrl:"";
+      }
+      preview(foto ? foto + (foto.indexOf("?")>=0?"&":"?")+"v="+Date.now() : "");
+    }catch(e){console.warn("Foto do perfil:",e);preview("")}
   }
   function comprimir(file){
     return new Promise(function(resolve,reject){
@@ -60,7 +70,21 @@ code = r'''
     if(file.size>8*1024*1024){msg("A foto é muito grande. Escolha uma imagem menor.","gc-erro");return}
     if(!client){msg("Sistema ainda está carregando. Tente novamente.","gc-erro");return}
     btn.disabled=true;msg("Salvando sua foto...","gc-info");
-    try{var data=await comprimir(file),r=await client.rpc("salvar_foto_cliente",{p_telefone:tel,p_foto_url:data});if(r.error)throw r.error;if(r.data!==true)throw new Error("Cliente não encontrado.");preview(data);input.value="";msg("Foto atualizada com sucesso!","gc-ok")}
+    try{
+      msg("Enviando foto...","gc-info");
+      var ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+      var path=digits(tel)+"/perfil."+ext;
+      var up=await client.storage.from("fotos-clientes").upload(path,file,{contentType:file.type,upsert:true});
+      if(up.error)throw up.error;
+      var r=await client.rpc("salvar_foto_cliente",{p_telefone:tel,p_foto_url:path});
+      if(r.error)throw r.error;
+      if(r.data!==true)throw new Error("Cliente não encontrado.");
+      var pu=client.storage.from("fotos-clientes").getPublicUrl(path);
+      var url=pu&&pu.data&&pu.data.publicUrl?pu.data.publicUrl:"";
+      preview(url ? url+(url.indexOf("?")>=0?"&":"?")+"v="+Date.now() : "");
+      input.value="";
+      msg("Foto atualizada com sucesso!","gc-ok");
+    }
     catch(e){console.error("Salvar foto:",e);msg(e.message||"Não foi possível salvar a foto.","gc-erro")}finally{btn.disabled=false}
   }
   function preparar(){
