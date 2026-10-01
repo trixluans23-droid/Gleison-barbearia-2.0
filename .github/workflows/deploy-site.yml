@@ -1136,6 +1136,11 @@ jobs:
                 return ta-tb;
               });
 
+              var atual=Array.prototype.slice.call(parent.children).filter(function(el){
+                return cards.indexOf(el)>=0;
+              });
+              var mudou=atual.length!==cards.length || atual.some(function(el,i){return el!==cards[i];});
+              if(!mudou)return;
               var frag=document.createDocumentFragment();
               cards.forEach(function(card){frag.appendChild(card);});
               parent.appendChild(frag);
@@ -1601,10 +1606,15 @@ jobs:
               var badges=document.querySelectorAll("#agenda .badge");
               badges.forEach(function(el){
                 var t=(el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                el.classList.remove("status-cor-agendado","status-cor-cancelado","status-cor-atendido");
-                if(t==="agendado"||t==="confirmado") el.classList.add("status-cor-agendado");
-                else if(t==="cancelado") el.classList.add("status-cor-cancelado");
-                else if(t==="atendido") el.classList.add("status-cor-atendido");
+                var desejada="";
+                if(t==="agendado"||t==="confirmado") desejada="status-cor-agendado";
+                else if(t==="cancelado") desejada="status-cor-cancelado";
+                else if(t==="atendido") desejada="status-cor-atendido";
+                var classes=["status-cor-agendado","status-cor-cancelado","status-cor-atendido"];
+                var atual=classes.find(function(c){return el.classList.contains(c);})||"";
+                if(atual===desejada)return;
+                classes.forEach(function(c){el.classList.remove(c);});
+                if(desejada)el.classList.add(desejada);
               });
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",aplicar);
