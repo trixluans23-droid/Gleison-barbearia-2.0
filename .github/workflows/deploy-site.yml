@@ -1068,7 +1068,7 @@ jobs:
             function start(){
               process();
               setInterval(process,30000);
-              new MutationObserver(function(){process();}).observe(document.body,{childList:true,subtree:true});
+              // Não observar todo o body: alterações na própria agenda geram novas mutações e podem travar o WebView.
             }
 
             if(document.readyState==="loading"){
@@ -1158,7 +1158,7 @@ jobs:
               setTimeout(sort,1000);
               setTimeout(sort,2500);
               setInterval(sort,5000);
-              new MutationObserver(function(){setTimeout(sort,50);}).observe(document.body,{childList:true,subtree:true});
+              // A ordenação é atualizada pelo intervalo abaixo; observar o body criava um loop de mutações ao reordenar os cards.
             }
 
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
@@ -1550,7 +1550,7 @@ jobs:
               setTimeout(sort,500);
               setTimeout(sort,1500);
               setInterval(sort,30000);
-              new MutationObserver(function(){setTimeout(sort,100);}).observe(document.body,{childList:true,subtree:true});
+              // A agenda administrativa também é atualizada pelo intervalo; evitar MutationObserver para não gerar loop.
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
             else start();
