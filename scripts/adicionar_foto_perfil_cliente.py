@@ -55,7 +55,9 @@ code = r'''
       '<label style="width:100%;margin:0">Foto do perfil</label>'+
       '<input id="gc-foto-perfil-input" class="gc-foto-perfil-input" type="file" accept="image/*" capture="user">'+
       '<button type="button" id="gc-foto-perfil-salvar" class="gc-foto-perfil-btn">📷 Alterar minha foto</button>'+
-      '<button type="button" id="gc-foto-perfil-navegador" class="gc-foto-perfil-btn" style="background:#20252a!important;color:#fff!important;border:1px solid #555">🌐 Abrir galeria no navegador</button>';
+      '<button type="button" id="gc-foto-perfil-navegador" class="gc-foto-perfil-btn" style="background:#20252a!important;color:#fff!important;border:1px solid #555">🌐 Usar galeria no navegador</button>'+
+      '<div id="gc-foto-perfil-link-box" style="display:none;width:100%;padding:10px;border:1px solid #444;border-radius:10px;background:#171c20;font-size:12px;line-height:1.4">'+
+      'Abra o Chrome e cole o link copiado:<br><a id="gc-foto-perfil-link" href="#" style="color:#f2c14e;word-break:break-all"></a></div>';
     var p=modal.querySelector("p");if(p)p.insertAdjacentElement("afterend",wrap);
     document.getElementById("gc-foto-perfil-salvar").addEventListener("click",salvar);
     document.getElementById("gc-foto-perfil-input").addEventListener("change",function(){var f=this.files&&this.files[0];if(f)preview(URL.createObjectURL(f))});
@@ -64,9 +66,18 @@ code = r'''
   function abrirNoNavegador(){
     var tel=telefone(),base=location.origin+location.pathname;
     var alvo=base+"?foto_perfil=1&telefone="+encodeURIComponent(tel);
-    var semEsquema=alvo.replace(/^https?:\/\//,"");
-    var intent="intent://"+semEsquema+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(alvo)+";end";
-    try{window.location.href=intent}catch(e){window.open(alvo,"_blank")}
+    var box=document.getElementById("gc-foto-perfil-link-box");
+    var link=document.getElementById("gc-foto-perfil-link");
+    if(box&&link){
+      link.href=alvo;
+      box.style.display="block";
+      msg("Abra este link no Chrome para escolher sua foto.","gc-info");
+      try{
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(alvo).then(function(){msg("Link copiado. Abra o Chrome e cole o link.","gc-ok")}).catch(function(){});
+        }
+      }catch(e){}
+    }
   }
   function prepararBotaoNavegador(){
     var b=document.getElementById("gc-foto-perfil-navegador");
