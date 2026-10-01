@@ -1151,10 +1151,13 @@ jobs:
             }
 
             function start(){
-              // loadMyAgenda já entrega os cards na ordem correta.
-              // Não fazer novas reordenações nos primeiros segundos evita o "pulo" visual
-              // e o atraso percebido ao abrir Minha agenda no WebView.
-              setInterval(sort,10000);
+              // Existe código antigo no HTML que também pode tentar ordenar a lista.
+              // O protetor roda após o carregamento e periodicamente, mas só move
+              // os cards quando a ordem estiver realmente errada.
+              sort();
+              setTimeout(sort,500);
+              setTimeout(sort,1500);
+              setInterval(sort,1000);
             }
 
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
