@@ -968,7 +968,7 @@ jobs:
               return Array.prototype.slice.call(agenda.querySelectorAll(".card")).filter(function(el){
                 var t=norm(el.innerText);
                 return /Cliente:\s*/i.test(t) &&
-                       /\bAgendado\b/i.test(t) &&
+                       /\b(?:Agendado|Confirmado)\b/i.test(t) &&
                        /(Remarcar|Cancelar)/i.test(t) &&
                        getDate(t);
               });
