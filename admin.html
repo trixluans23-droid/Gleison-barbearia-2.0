@@ -289,10 +289,10 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div style="font-weight:900;font-size:18px;margin-bottom:6px">🕐 Horários de funcionamento</div>
 <div class="small" style="margin-bottom:12px">Altere aqui os horários normais que serão usados pela agenda dos clientes e do administrador.</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div><label for="horaAberturaAdmin">Abertura</label><input id="horaAberturaAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
-<div><label for="horaFechamentoAdmin">Terça a sexta — fechamento</label><input id="horaFechamentoAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
+<div><label for="horaAberturaAdmin">Abertura</label><input id="horaAberturaAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
+<div><label for="horaFechamentoAdmin">Terça a sexta — fechamento (ex.: 20:30 ou 23:00)</label><input id="horaFechamentoAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
 </div>
-<div style="margin-top:10px"><label for="horaFechamentoSabadoAdmin">Sábado — fechamento</label><input id="horaFechamentoSabadoAdmin" type="time" style="width:100%;box-sizing:border-box"/></div>
+<div style="margin-top:10px"><label for="horaFechamentoSabadoAdmin">Sábado — fechamento (ex.: 23:00)</label><input id="horaFechamentoSabadoAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
 <button class="btn primary" id="btnSalvarHorariosAdmin" onclick="salvarHorariosFuncionamentoAdmin()" style="width:100%;margin-top:12px;min-height:50px;font-weight:900" type="button">💾 Salvar horários</button>
 <div id="horariosFuncionamentoMensagem" class="small" style="margin-top:9px;font-weight:800"></div>
 </div>
@@ -540,15 +540,38 @@ function mostrarPainel(){
 }
 
 
+window.__horariosFuncionamentoAdmin = {
+  abertura: '09:00',
+  fechamento: '20:30',
+  fechamentoSabado: '23:00'
+};
+
+function minutosHorarioAdmin(hora){
+  const partes=String(hora||'').slice(0,5).split(':').map(Number);
+  if(partes.length!==2 || !Number.isFinite(partes[0]) || !Number.isFinite(partes[1])) return 0;
+  return partes[0]*60+partes[1];
+}
+
+function faixaHorarioAdminPorDia(dia){
+  const h=window.__horariosFuncionamentoAdmin||{};
+  const inicio=minutosHorarioAdmin(h.abertura||'09:00');
+  const fim=minutosHorarioAdmin(dia===6 ? (h.fechamentoSabado||'23:00') : (h.fechamento||'20:30'));
+  return {inicio,fim};
+}
+
 async function carregarHorariosFuncionamentoAdmin(){
   const msg=document.getElementById('horariosFuncionamentoMensagem');
   try{
     const rows=await chamarRPC('obter_horarios_funcionamento',{});
     const h=Array.isArray(rows)?rows[0]:rows;
     if(!h) throw new Error('Horários não encontrados.');
-    document.getElementById('horaAberturaAdmin').value=String(h.hora_abertura||'').slice(0,5);
-    document.getElementById('horaFechamentoAdmin').value=String(h.hora_fechamento||'').slice(0,5);
-    document.getElementById('horaFechamentoSabadoAdmin').value=String(h.hora_fechamento_sabado||'').slice(0,5);
+    const aberturaAtual=String(h.hora_abertura||'09:00').slice(0,5);
+    const fechamentoAtual=String(h.hora_fechamento||'20:30').slice(0,5);
+    const fechamentoSabadoAtual=String(h.hora_fechamento_sabado||'23:00').slice(0,5);
+    window.__horariosFuncionamentoAdmin={abertura:aberturaAtual,fechamento:fechamentoAtual,fechamentoSabado:fechamentoSabadoAtual};
+    document.getElementById('horaAberturaAdmin').value=aberturaAtual;
+    document.getElementById('horaFechamentoAdmin').value=fechamentoAtual;
+    document.getElementById('horaFechamentoSabadoAdmin').value=fechamentoSabadoAtual;
     if(msg){msg.textContent='🟢 Horários atuais carregados.';msg.style.color='#5ee27a';}
   }catch(e){
     console.error(e);
@@ -568,6 +591,7 @@ async function salvarHorariosFuncionamentoAdmin(){
   try{
     btn.disabled=true;btn.textContent='Salvando...';
     await chamarRPC('definir_horarios_funcionamento',{p_hora_abertura:abertura+':00',p_hora_fechamento:fechamento+':00',p_hora_fechamento_sabado:fechamentoSabado+':00'});
+    window.__horariosFuncionamentoAdmin={abertura,fechamento,fechamentoSabado};
     msg.textContent='✅ Horários salvos. A agenda já passa a usar os novos horários.';msg.style.color='#5ee27a';
   }catch(e){
     console.error(e);msg.textContent='❌ '+(e.message||'Não foi possível salvar os horários.');msg.style.color='#ff667a';
@@ -1528,10 +1552,10 @@ async function carregarHorariosRemarcacaoAdmin(data, id){
   const agoraMin=agora.getHours()*60+agora.getMinutes();
   const dia=new Date(data+'T12:00:00').getDay();
 
-  // Horário normal: terça a sexta 09:00–20:30; sábado 09:00–23:00.
+  // Horários configurados pelo administrador.
   // Domingo/segunda só aparecem se estiverem excepcionalmente abertos.
-  let inicio=9*60, fim=20*60+30;
-  if(dia===6) fim=23*60;
+  const faixa=faixaHorarioAdminPorDia(dia);
+  const inicio=faixa.inicio, fim=faixa.fim;
 
   const horarios=[];
   for(let m=inicio;m<=fim;m+=30){
@@ -1649,8 +1673,9 @@ window.remarcarAgendamentoAdmin = function(id){
       const agora=new Date();
       const agoraMin=agora.getHours()*60+agora.getMinutes();
       const dia=diaSemanaAdmin(data);
-      let inicio=9*60;
-      let fim=(dia===6?23*60:20*60+30);
+      const faixa=faixaHorarioAdminPorDia(dia);
+      const inicio=faixa.inicio;
+      const fim=faixa.fim;
       const horarios=[];
       for(let m=inicio;m<=fim;m+=30){
         if(m>11*60+30 && m<14*60) continue;
@@ -2390,15 +2415,15 @@ async function atualizarHorariosAdmin(){
     return atualizarHorariosAdmin();
   }
   const dia=new Date(data+'T12:00:00').getDay();
-  // Horário administrativo: terça a sexta 09:00–20:30; sábado 09:00–23:00.
+  // Horários configurados pelo administrador.
   // Domingo e segunda ficam bloqueados por padrão.
   if(dia===0 || dia===1){
     sel.innerHTML='<option value="">Barbearia fechada neste dia</option>';
     return;
   }
-  const limite=dia===6 ? 23*60 : (20*60+30);
-  const inicio=9*60;
-  const fim=limite;
+  const faixa=faixaHorarioAdminPorDia(dia);
+  const inicio=faixa.inicio;
+  const fim=faixa.fim;
 
   // Horários já ocupados no Supabase para a data escolhida.
   let ocupados=new Set();
