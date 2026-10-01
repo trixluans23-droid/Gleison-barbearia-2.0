@@ -20,8 +20,23 @@ code = r'''
   function telefone(){return localStorage.getItem(PHONE_KEY)||""}
   function preview(url){
     var e=document.getElementById("gc-foto-perfil-preview"); if(!e)return;
-    if(url){e.src=url;e.classList.remove("gc-foto-perfil-placeholder");e.alt="Minha foto";e.textContent=""}
-    else{e.removeAttribute("src");e.classList.add("gc-foto-perfil-placeholder");e.alt="Sem foto";e.textContent="👤"}
+    if(url){
+      e.style.display="block";
+      e.alt="";
+      e.onerror=function(){
+        e.onerror=null;
+        e.removeAttribute("src");
+        e.alt="";
+        e.style.display="block";
+        e.style.background="#171c20";
+      };
+      e.src=url;
+    }else{
+      e.removeAttribute("src");
+      e.alt="";
+      e.style.display="block";
+      e.style.background="#171c20";
+    }
   }
   async function carregar(){
     var tel=telefone(),client=sb(); if(digits(tel).length!==11||!client){preview("");return}
