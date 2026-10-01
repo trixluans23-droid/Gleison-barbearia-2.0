@@ -38,5 +38,7 @@ new_limite = """let limiteSabado;
     }"""
 s=s.replace(old_limite,new_limite)
 
+# Atualiza rapidamente a agenda aberta do cliente quando o administrador altera o horário.\n# O intervalo de 15s passa para 2s somente enquanto a tela de agendamento está aberta.\ns=s.replace('},15000);','},2000);')
+
 p.write_text(s,encoding="utf-8")
 print("Horários até 23:00 aplicados à agenda do cliente.")
