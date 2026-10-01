@@ -1677,6 +1677,7 @@ jobs:
           <style id="remover-perfil-barra-inferior">
           /* O perfil fica somente no menu dos três pontos. */
           .nav-profile-hidden{display:none!important}
+          nav.nav .nav-account-stack{display:none!important}
           </style>
           <script id="remover-perfil-barra-inferior-script">
           (function(){
