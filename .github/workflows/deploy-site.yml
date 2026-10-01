@@ -255,6 +255,7 @@ jobs:
           #menu-tres-pontos button{display:flex;align-items:center;width:100%;min-height:48px;border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;padding:11px 12px;font:700 15px Arial,sans-serif;cursor:pointer}
           #menu-tres-pontos button:active,#menu-tres-pontos button:hover{background:rgba(255,255,255,.08)}
           #menu-tres-pontos button .ico{width:30px;flex:0 0 30px;font-size:19px}
+          .gc-menu-nav-hidden{display:none!important}
           @media(max-width:520px){
             #menu-tres-pontos-btn{width:42px;height:42px;flex-basis:42px;font-size:24px}
             #menu-tres-pontos{top:62px}
@@ -263,6 +264,8 @@ jobs:
 
           <div id="menu-tres-pontos-overlay" aria-hidden="true">
             <div id="menu-tres-pontos" role="menu" aria-label="Mais opções">
+              <button type="button" data-menu-acao="inicio"><span class="ico">⌂</span>Início</button>
+              <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
               <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Meu perfil</button>
               <button type="button" data-menu-acao="notificacoes"><span class="ico">🔔</span>Notificações</button>
               <button type="button" data-menu-acao="administrador"><span class="ico">🛡️</span>Área do administrador</button>
@@ -287,6 +290,16 @@ jobs:
               if(b){b.click();return true;}
               return false;
             }
+            function esconderInicioAgendaRodape(){
+              var itens=document.querySelectorAll("button, a, [role='button']");
+              Array.prototype.forEach.call(itens,function(el){
+                if(el.closest("#menu-tres-pontos, #menu-tres-pontos-overlay")) return;
+                var t=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(t!=="início" && t!=="inicio" && t!=="agenda") return;
+                var r=el.getBoundingClientRect();
+                if(r.top > window.innerHeight*0.65) el.classList.add("gc-menu-nav-hidden");
+              });
+            }
             function prepararMenu(){
               if(document.getElementById("menu-tres-pontos-btn")) return;
               var header=document.querySelector("header");
@@ -306,6 +319,8 @@ jobs:
                 var acao=item.getAttribute("data-menu-acao");
                 if(acao==="administrador"){fecharMenu();window.location.href="admin.html";return;}
                 fecharMenu();
+                if(acao==="inicio") clicarTab("inicio");
+                if(acao==="agenda") clicarTab("agenda");
                 if(acao==="perfil") clicarTab("perfil");
                 if(acao==="notificacoes") clicarTab("notificacoes");
                 return;
@@ -315,10 +330,19 @@ jobs:
             });
             document.addEventListener("keydown",function(e){if(e.key==="Escape")fecharMenu();});
             if(document.readyState==="loading"){
-              document.addEventListener("DOMContentLoaded",prepararMenu);
+              document.addEventListener("DOMContentLoaded",function(){
+                prepararMenu();
+                esconderInicioAgendaRodape();
+                setTimeout(esconderInicioAgendaRodape,500);
+                setTimeout(esconderInicioAgendaRodape,1500);
+              });
             }else{
               prepararMenu();
+              esconderInicioAgendaRodape();
+              setTimeout(esconderInicioAgendaRodape,500);
+              setTimeout(esconderInicioAgendaRodape,1500);
             }
+            document.addEventListener("click",function(){setTimeout(esconderInicioAgendaRodape,100)},true);
           })();
           </script>
           '''
