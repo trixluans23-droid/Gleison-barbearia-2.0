@@ -134,5 +134,18 @@ if "GleisonAndroid.agendarLembrete" not in h:
         if marker not in h:
             raise SystemExit("Não encontrei o ponto de fechamento da tela de agendamento.")
         h = h.replace(marker, "if(window.GleisonAndroid && typeof window.GleisonAndroid.agendarLembrete==='function'){ window.GleisonAndroid.agendarLembrete(dataHora, 'Gleison Barbearia', 'Seu horário é em aproximadamente 20 minutos.'); }\n    " + marker, 1)
+# MODO_TESTE_LEMBRETE_2_MIN: libera temporariamente horários próximos no APK de teste.
+# O ajuste fica somente no asset do APK; o sistema online não é alterado.
+if "MODO_TESTE_LEMBRETE_2_MIN" not in h:
+    h = h.replace("</body>", """<script>
+/* MODO_TESTE_LEMBRETE_2_MIN */
+(function(){
+  window.GLEISON_TESTE_LEMBRETE_2_MIN = true;
+  var aviso = document.createElement('div');
+  aviso.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;z-index:99999;background:#111;color:#fff;padding:8px;border-radius:8px;font-size:12px;text-align:center';
+  aviso.textContent='MODO TESTE: lembrete em 2 minutos';
+  document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(aviso);});
+})();
+</script></body>""")
 html.write_text(h, encoding="utf-8")
 print("Integração nativa concluída.")
