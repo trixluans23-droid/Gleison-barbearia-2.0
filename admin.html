@@ -986,10 +986,13 @@ async function carregarAgenda(){
     const rowsComFoto = await Promise.all(rowsVisiveis.map(async a => {
       a.servico = a.servico || a.servico_nome || 'Serviço não informado';
       a.barbeiro = a.barbeiro || a.barbeiro_nome || 'Gleison';
-      let caminhoFoto = a.foto_url || '';
-      if(!caminhoFoto && a.telefone){
+      let caminhoFoto = '';
+      // Sempre consulta a foto atual do cadastro do cliente pelo telefone.
+      // Assim, se o cliente trocar a foto depois de agendar, o barbeiro verá a nova foto.
+      if(a.telefone){
         caminhoFoto = await buscarFotoPorTelefoneAdmin(a.telefone);
       }
+      if(!caminhoFoto) caminhoFoto = a.foto_url || '';
       const foto = caminhoFoto ? await criarUrlFoto(caminhoFoto) : '';
       return {...a,foto_url_resolvida:foto};
     }));
@@ -1184,10 +1187,12 @@ async function carregarMensagensAdmin(){
     }
     const cards=await Promise.all(grupos.map(async grupo=>{
       const ultima=grupo[grupo.length-1];
-      let caminhoFoto = ultima.foto_url || '';
-      if(!caminhoFoto && ultima.telefone){
+      let caminhoFoto = '';
+      // Usa a foto atual do cadastro, não a foto antiga gravada na mensagem.
+      if(ultima.telefone){
         caminhoFoto = await buscarFotoPorTelefoneAdmin(ultima.telefone);
       }
+      if(!caminhoFoto) caminhoFoto = ultima.foto_url || '';
       const foto=await criarUrlFotoAdmin(caminhoFoto);
       const naoLidas=grupo.filter(m=>m.remetente==='cliente' && !m.lida).length;
       return `<div class="card message-client-card" data-cliente-id="${escapeHtml(ultima.cliente_id)}">
