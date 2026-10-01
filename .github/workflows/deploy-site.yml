@@ -1153,12 +1153,10 @@ jobs:
             }
 
             function start(){
-              sort();
-              setTimeout(sort,300);
-              setTimeout(sort,1000);
-              setTimeout(sort,2500);
-              setInterval(sort,5000);
-              // A ordenação é atualizada pelo intervalo abaixo; observar o body criava um loop de mutações ao reordenar os cards.
+              // loadMyAgenda já entrega os cards na ordem correta.
+              // Não fazer novas reordenações nos primeiros segundos evita o "pulo" visual
+              // e o atraso percebido ao abrir Minha agenda no WebView.
+              setInterval(sort,10000);
             }
 
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);
