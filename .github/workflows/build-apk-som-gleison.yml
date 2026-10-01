@@ -9,6 +9,7 @@ on:
   push:
     paths:
       - '.github/workflows/build-apk-som-gleison.yml'
+      - 'scripts/integrate_native_reminder.py'
   workflow_dispatch:
 
 jobs:
