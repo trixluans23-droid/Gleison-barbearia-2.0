@@ -47,159 +47,137 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
 
-          code=r'''
-          <script id="horarios-funcionamento-cliente-online">
-          (function(){
-            let cache={abertura:'09:00',fechamento:'20:30',fechamentoSabado:'23:00'};
-            const excecoes={};
+          old=re.search(r"function horarioFuncionamentoCliente\(\)\{.*?\n\}\n\nfunction estaDentroDoHorarioCliente\(\)",s,re.S)
+          if not old: raise SystemExit("horarioFuncionamentoCliente não encontrado")
 
-            function mins(v){
-              const p=String(v||'').slice(0,5).split(':').map(Number);
-              return p.length===2 && p.every(Number.isFinite) ? p[0]*60+p[1] : null;
-            }
+          new="""let horariosFuncionamentoCliente={abertura:'09:00',fechamento:'20:30',fechamentoSabado:'23:00'};
+          let excecoesFuncionamentoCliente={};
 
-            async function carregarHorarios(){
-              try{
-                const r=await supabaseClient.rpc('obter_horarios_funcionamento',{});
-                if(r.error) throw r.error;
-                const row=Array.isArray(r.data)?r.data[0]:r.data;
-                if(row){
-                  cache={
-                    abertura:String(row.hora_abertura||'09:00').slice(0,5),
-                    fechamento:String(row.hora_fechamento||'20:30').slice(0,5),
-                    fechamentoSabado:String(row.hora_fechamento_sabado||'23:00').slice(0,5)
-                  };
-                }
-              }catch(e){ console.warn('Horários do administrador:',e); }
-              return cache;
-            }
-
-            async function carregarExcecao(data){
-              if(!data) return null;
-              try{
-                const r=await supabaseClient.rpc('listar_excecoes_funcionamento',{
-                  p_inicio:data,p_fim:data
-                });
-                if(r.error) throw r.error;
-                const row=Array.isArray(r.data)?(r.data[0]||null):r.data;
-                excecoes[data]=row||null;
-                return excecoes[data];
-              }catch(e){
-                console.warn('Exceção de funcionamento:',e);
-                excecoes[data]=null;
-                return null;
+          async function carregarHorariosFuncionamentoCliente(){
+            try{
+              const {data,error}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
+              if(error) throw error;
+              const row=Array.isArray(data)?data[0]:data;
+              if(row){
+                horariosFuncionamentoCliente={
+                  abertura:String(row.hora_abertura||'09:00').slice(0,5),
+                  fechamento:String(row.hora_fechamento||'20:30').slice(0,5),
+                  fechamentoSabado:String(row.hora_fechamento_sabado||'23:00').slice(0,5)
+                };
               }
+            }catch(error){console.error('Erro ao carregar horários:',error);}
+          }
+
+          function minutosHorarioCliente(v){
+            const p=String(v||'').slice(0,5).split(':').map(Number);
+            return p.length===2 && p.every(Number.isFinite) ? p[0]*60+p[1] : null;
+          }
+
+          function horarioFuncionamentoCliente(data){
+            const alvo=data||dataLocalHoje();
+            const parts=String(alvo).split('-').map(Number);
+            const dia=parts.length===3 && parts.every(Number.isFinite)
+              ? new Date(parts[0],parts[1]-1,parts[2]).getDay()
+              : new Date().getDay();
+            const ex=excecoesFuncionamentoCliente[alvo];
+            if(ex && ex.aberta===false) return null;
+            if((dia===0 || dia===1) && !(ex && ex.aberta===true)) return null;
+            const inicio=minutosHorarioCliente(horariosFuncionamentoCliente.abertura);
+            const fim=minutosHorarioCliente(dia===6 ? horariosFuncionamentoCliente.fechamentoSabado : horariosFuncionamentoCliente.fechamento);
+            if(inicio===null || fim===null || fim<=inicio) return null;
+            return {inicio,fim,fimTexto:(dia===6?horariosFuncionamentoCliente.fechamentoSabado:horariosFuncionamentoCliente.fechamento)};
+          }
+
+          function estaDentroDoHorarioCliente(){
+            const h=horarioFuncionamentoCliente(dataLocalHoje());
+            if(!h) return false;
+            const agora=new Date();
+            const minutos=agora.getHours()*60+agora.getMinutes();
+            return minutos>=h.inicio && minutos<h.fim;
+          }"""
+          s=s[:old.start()]+new+s[old.end():]
+
+          old2=re.search(r"const timesWeekday = .*?function nomeDiaFechado\(date\)\{.*?\n\}",s,re.S)
+          if not old2: raise SystemExit("bloco de horários do agendamento não encontrado")
+
+          new2="""function gerarHorariosFuncionamentoCliente(inicio,fim){
+            const lista=[];
+            for(let m=inicio;m<=fim;m+=30){
+              if(m>11*60 && m<14*60) continue;
+              lista.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
             }
+            return lista;
+          }
 
-            function dia(data){
-              const p=String(data||'').split('-').map(Number);
-              return p.length===3 && p.every(Number.isFinite)
-                ? new Date(p[0],p[1]-1,p[2]).getDay()
-                : new Date().getDay();
+          function getTimesForDate(date){
+            const h=horarioFuncionamentoCliente(date);
+            return h ? gerarHorariosFuncionamentoCliente(h.inicio,h.fim) : [];
+          }
+
+          function dataFechadaPorDia(date){
+            if(!date) return false;
+            const parts=date.split('-').map(Number);
+            if(parts.length!==3 || parts.some(Number.isNaN)) return false;
+            const weekday=new Date(parts[0],parts[1]-1,parts[2]).getDay();
+            const ex=excecoesFuncionamentoCliente[date];
+            if(ex && ex.aberta===true) return false;
+            if(ex && ex.aberta===false) return true;
+            return weekday===0 || weekday===1;
+          }
+          function nomeDiaFechado(date){
+            if(!date) return 'data';
+            const parts=date.split('-').map(Number);
+            const weekday=new Date(parts[0],parts[1]-1,parts[2]).getDay();
+            return ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][weekday] || 'data';
+          }"""
+          s=s[:old2.start()]+new2+s[old2.end():]
+
+          # Carrega o horário salvo antes de abrir a agenda e atualiza a grade quando a data muda.
+          s=s.replace("async function openBooking(){", """async function openBooking(){
+            await carregarHorariosFuncionamentoCliente();
+            const dataInicial=document.getElementById('date')?.value;
+            if(dataInicial) await carregarExcecaoFuncionamentoCliente(dataInicial);""",1)
+
+          # Consulta a exceção do dia selecionado.
+          marcador="async function openBooking(){"
+          # Insere função auxiliar antes de openBooking se ainda não existir.
+          if "async function carregarExcecaoFuncionamentoCliente" not in s:
+            aux="""async function carregarExcecaoFuncionamentoCliente(date){
+            if(!date) return null;
+            try{
+              const {data,error}=await supabaseClient.rpc('listar_excecoes_funcionamento',{p_inicio:date,p_fim:date});
+              if(error) throw error;
+              const row=Array.isArray(data)?(data[0]||null):data;
+              excecoesFuncionamentoCliente[date]=row||null;
+              return row||null;
+            }catch(error){
+              console.warn('Erro ao carregar exceção:',error);
+              excecoesFuncionamentoCliente[date]=null;
+              return null;
             }
+          }
 
-            window.horarioFuncionamentoCliente=function(data){
-              const d=dia(data||dataLocalHoje());
-              const ex=excecoes[data||dataLocalHoje()];
-              if(ex && ex.aberta===false) return null;
-              if((d===0 || d===1) && !(ex && ex.aberta===true)) return null;
+          """
+            s=s.replace(marcador,aux+marcador,1)
 
-              const inicio=mins(cache.abertura);
-              const fim=mins(d===6 ? cache.fechamentoSabado : cache.fechamento);
-              if(inicio===null || fim===null || fim<=inicio) return null;
-              return {
-                inicio:inicio,
-                fim:fim,
-                fimTexto:d===6 ? cache.fechamentoSabado : cache.fechamento
-              };
-            };
+          # Garante que ao trocar a data a configuração nova seja aplicada imediatamente.
+          alvo="""if(dateInput) dateInput.addEventListener('change', async function(){
+  selectedTime="";
+  const status=await obterStatusBarbeariaCliente();"""
+          if alvo in s:
+            s=s.replace(alvo,"""if(dateInput) dateInput.addEventListener('change', async function(){
+  selectedTime="";
+  await carregarHorariosFuncionamentoCliente();
+  await carregarExcecaoFuncionamentoCliente(dateInput.value);
+  const status=await obterStatusBarbeariaCliente();""",1)
 
-            window.estaDentroDoHorarioCliente=function(){
-              const h=window.horarioFuncionamentoCliente(dataLocalHoje());
-              if(!h) return false;
-              const agora=new Date();
-              const m=agora.getHours()*60+agora.getMinutes();
-              return m>=h.inicio && m<h.fim;
-            };
-
-            window.dataFechadaPorDia=function(data){
-              const d=dia(data);
-              const ex=excecoes[data];
-              if(ex && ex.aberta===true) return false;
-              if(ex && ex.aberta===false) return true;
-              return d===0 || d===1;
-            };
-
-            window.getTimesForDate=function(data){
-              const h=window.horarioFuncionamentoCliente(data);
-              if(!h) return [];
-              const lista=[];
-              for(let m=h.inicio;m<=h.fim;m+=30){
-                if(m>11*60 && m<14*60) continue;
-                lista.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
-              }
-              return lista;
-            };
-
-            async function atualizarAgendaCliente(){
-              const input=document.getElementById('date');
-              const data=input && input.value;
-              if(!data) return;
-              await carregarHorarios();
-              await carregarExcecao(data);
-              if(typeof loadOccupiedTimes==='function') await loadOccupiedTimes();
-              if(typeof renderTimes==='function') renderTimes();
-            }
-
-            const originalOpen=window.openBooking;
-            if(typeof originalOpen==='function'){
-              window.openBooking=async function(){
-                const input=document.getElementById('date');
-                const data=input && input.value;
-                await carregarHorarios();
-                if(data) await carregarExcecao(data);
-                return originalOpen.apply(this,arguments);
-              };
-            }
-
-            const originalConfirm=window.confirmBooking;
-            if(typeof originalConfirm==='function'){
-              window.confirmBooking=async function(){
-                const input=document.getElementById('date');
-                const data=input && input.value;
-                await carregarHorarios();
-                if(data) await carregarExcecao(data);
-                return originalConfirm.apply(this,arguments);
-              };
-            }
-
-            document.addEventListener('DOMContentLoaded',function(){
-              carregarHorarios().then(function(){
-                const input=document.getElementById('date');
-                if(input && input.value) atualizarAgendaCliente();
-              });
-              const input=document.getElementById('date');
-              if(input){
-                input.addEventListener('change',atualizarAgendaCliente);
-              }
-              setInterval(function(){
-                const modal=document.getElementById('bookingModal');
-                if(modal && modal.classList.contains('show')) atualizarAgendaCliente();
-                else carregarHorarios();
-              },15000);
-            });
-          })();
-          </script>
-          '''
-
-          if 'id="horarios-funcionamento-cliente-online"' not in s and "</body>" in s:
-              s=s.replace("</body>",code+"</body>",1)
-          p.write_text(s,encoding="utf-8")
-          print("Agenda do cliente sincronizada com os horários salvos pelo administrador.")
+          p.write_text(s,encoding='utf-8')
+          print('Horários do cliente agora usam diretamente a configuração do administrador.')
           PY
 
       - name: Adicionar botão Atualizar
