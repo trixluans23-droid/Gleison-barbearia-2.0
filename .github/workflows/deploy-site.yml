@@ -237,7 +237,7 @@ jobs:
           print("Botão Atualizar adicionado ao sistema online.")
           PY
 
-      - name: Substituir navegação inferior pelo menu de três pontos
+      - name: Menu dos três pontos no topo
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -245,23 +245,16 @@ jobs:
           p = Path("site/index.html")
           s = p.read_text(encoding="utf-8")
 
-          # Remove o botão de perfil que a versão anterior do deploy adicionava.
-          s = s.replace('<button class="header-perfil-btn" type="button" onclick="tab(\'perfil\',this)" aria-label="Meu perfil" title="Meu perfil">👤</button>', '')
-
           code = r'''
           <style id="menu-tres-pontos-online">
           #menu-tres-pontos-btn{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-left:6px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:#171b1f;color:#fff;font:700 25px/1 Arial,sans-serif;cursor:pointer;flex:0 0 44px;padding:0}
           #menu-tres-pontos-btn:active{transform:scale(.95)}
           #menu-tres-pontos-overlay{display:none;position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.38)}
           #menu-tres-pontos-overlay.aberto{display:block}
-          #menu-tres-pontos{position:absolute;top:68px;right:14px;width:min(300px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow:auto;background:#171b1f;border:1px solid rgba(242,193,78,.35);border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.5);padding:8px}
-          #menu-tres-pontos .menu-titulo{padding:10px 12px 8px;color:#f2c14e;font:700 14px Arial,sans-serif}
-          #menu-tres-pontos button{display:flex;align-items:center;width:100%;min-height:46px;border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;padding:10px 12px;font:600 15px Arial,sans-serif;cursor:pointer}
-          #menu-tres-pontos button:active,#menu-tres-pontos button:hover{background:rgba(242,193,78,.12)}
-          #menu-tres-pontos button .ico{width:28px;flex:0 0 28px;font-size:18px}
-          #menu-tres-pontos .menu-fechar{margin-top:4px;border-top:1px solid rgba(255,255,255,.1);color:#f2c14e}
-          .nav-account-stack{display:none!important}
-          .header-perfil-btn{display:none!important}
+          #menu-tres-pontos{position:absolute;top:68px;right:14px;width:min(300px,calc(100vw - 28px));background:#171b1f;border:1px solid rgba(255,255,255,.14);border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.5);padding:8px}
+          #menu-tres-pontos button{display:flex;align-items:center;width:100%;min-height:48px;border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;padding:11px 12px;font:700 15px Arial,sans-serif;cursor:pointer}
+          #menu-tres-pontos button:active,#menu-tres-pontos button:hover{background:rgba(255,255,255,.08)}
+          #menu-tres-pontos button .ico{width:30px;flex:0 0 30px;font-size:19px}
           @media(max-width:520px){
             #menu-tres-pontos-btn{width:42px;height:42px;flex-basis:42px;font-size:24px}
             #menu-tres-pontos{top:62px}
@@ -269,16 +262,10 @@ jobs:
           </style>
 
           <div id="menu-tres-pontos-overlay" aria-hidden="true">
-            <div id="menu-tres-pontos" role="menu" aria-label="Menu principal">
-              <div class="menu-titulo">Menu</div>
-              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Perfil</button>
-              <button type="button" data-menu-acao="historico"><span class="ico">📋</span>Meu histórico</button>
-              <button type="button" data-menu-acao="inicio"><span class="ico">⌂</span>Início</button>
-              <button type="button" data-menu-acao="agenda"><span class="ico">📅</span>Agenda</button>
-              <button type="button" data-menu-acao="mensagens"><span class="ico">💬</span>Mensagens</button>
-              <button type="button" data-menu-acao="barbearia"><span class="ico">✂</span>Barbearia</button>
-              <button type="button" data-menu-acao="administrador"><span class="ico">⚙</span>Administrador</button>
-              <button type="button" class="menu-fechar" data-menu-acao="fechar"><span class="ico">×</span>Fechar menu</button>
+            <div id="menu-tres-pontos" role="menu" aria-label="Mais opções">
+              <button type="button" data-menu-acao="perfil"><span class="ico">👤</span>Meu perfil</button>
+              <button type="button" data-menu-acao="notificacoes"><span class="ico">🔔</span>Notificações</button>
+              <button type="button" data-menu-acao="administrador"><span class="ico">🛡️</span>Área do administrador</button>
             </div>
           </div>
 
@@ -296,61 +283,42 @@ jobs:
               if(typeof window.tab==="function"){
                 try{ window.tab(nome); return true; }catch(e){}
               }
-              var botoes=Array.prototype.slice.call(document.querySelectorAll("button,a,[role='button']"));
-              var b=botoes.find(function(el){
-                var t=(el.innerText||el.textContent||"").trim().toLowerCase();
-                if(nome==="inicio") return t==="início"||t==="inicio";
-                if(nome==="agenda") return t==="agenda"||t.includes("agendamento");
-                if(nome==="mensagens") return t==="mensagens";
-                if(nome==="barbearia") return t==="barbearia";
-                if(nome==="perfil") return t==="perfil"||t==="meu perfil";
-                return false;
-              });
+              var b=document.querySelector("[onclick*=\"tab('"+nome+"')\"]");
               if(b){b.click();return true;}
               return false;
             }
-            function esconderNavegacaoInferior(){
-              var els=Array.prototype.slice.call(document.querySelectorAll("nav,footer,[class*='bottom'],[class*='nav']"));
-              var candidatos=els.filter(function(el){
-                if(el.id==="menu-tres-pontos-overlay") return false;
-                var txt=(el.innerText||"").replace(/\s+/g," ").toLowerCase();
-                if(!(txt.includes("agenda")&&txt.includes("mensagens")&&txt.includes("barbearia"))) return false;
-                var r=el.getBoundingClientRect(), cs=getComputedStyle(el);
-                return r.bottom>=window.innerHeight-140 && (cs.position==="fixed"||cs.position==="sticky"||cs.position==="absolute");
-              });
-              candidatos.sort(function(a,b){return a.getBoundingClientRect().height-b.getBoundingClientRect().height;});
-              if(candidatos[0]) candidatos[0].style.setProperty("display","none","important");
-            }
             function prepararMenu(){
+              if(document.getElementById("menu-tres-pontos-btn")) return;
               var header=document.querySelector("header");
-              if(!header || document.getElementById("menu-tres-pontos-btn")) return;
+              if(!header) return;
               var btn=document.createElement("button");
               btn.id="menu-tres-pontos-btn";
               btn.type="button";
-              btn.setAttribute("aria-label","Abrir menu");
-              btn.setAttribute("title","Menu");
+              btn.setAttribute("aria-label","Mais opções");
+              btn.setAttribute("title","Mais opções");
               btn.innerHTML="⋮";
               btn.addEventListener("click",function(e){e.stopPropagation();abrirMenu();});
               header.appendChild(btn);
             }
             document.addEventListener("click",function(e){
               var item=e.target.closest("[data-menu-acao]");
-              if(!item) return;
-              var acao=item.getAttribute("data-menu-acao");
-              if(acao==="fechar"){fecharMenu();return;}
-              if(acao==="administrador"){window.location.href="admin.html";return;}
-              fecharMenu();
-              clicarTab(acao);
+              if(item){
+                var acao=item.getAttribute("data-menu-acao");
+                if(acao==="administrador"){fecharMenu();window.location.href="admin.html";return;}
+                fecharMenu();
+                if(acao==="perfil") clicarTab("perfil");
+                if(acao==="notificacoes") clicarTab("notificacoes");
+                return;
+              }
+              var overlay=document.getElementById("menu-tres-pontos-overlay");
+              if(overlay && e.target===overlay) fecharMenu();
             });
-            var overlay=document.getElementById("menu-tres-pontos-overlay");
-            if(overlay) overlay.addEventListener("click",function(e){if(e.target===overlay)fecharMenu();});
             document.addEventListener("keydown",function(e){if(e.key==="Escape")fecharMenu();});
             if(document.readyState==="loading"){
-              document.addEventListener("DOMContentLoaded",function(){prepararMenu();esconderNavegacaoInferior();});
+              document.addEventListener("DOMContentLoaded",prepararMenu);
             }else{
-              prepararMenu();esconderNavegacaoInferior();
+              prepararMenu();
             }
-            window.addEventListener("resize",esconderNavegacaoInferior);
           })();
           </script>
           '''
@@ -359,7 +327,7 @@ jobs:
               s = s.replace("</body>", code + "</body>", 1)
 
           p.write_text(s, encoding="utf-8")
-          print("Menu de três pontos preparado; navegação inferior será ocultada.")
+          print("Menu dos 3 pontinhos atualizado somente no topo, com Perfil, Notificações e Área do administrador.")
           PY
 
       - name: Cadastro único do cliente
