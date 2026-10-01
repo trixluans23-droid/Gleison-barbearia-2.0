@@ -62,7 +62,12 @@ jobs:
                   settings.setAllowContentAccess(true);
                   webView.setWebViewClient(new WebViewClient());
                   setContentView(webView);
-                  webView.loadUrl("file:///android_asset/index.html");
+
+                  // O sistema principal fica online no GitHub Pages.
+                  // Assim, alterações no HTML/JavaScript chegam ao APK sem reinstalação.
+                  String sistemaOnline = "https://trixluans23-droid.github.io/Gleison-barbearia-2.0/index.html?v="
+                          + System.currentTimeMillis();
+                  webView.loadUrl(sistemaOnline);
               }
 
               @Override
