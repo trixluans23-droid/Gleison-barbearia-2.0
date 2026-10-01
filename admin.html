@@ -1227,11 +1227,40 @@ async function carregarMensagensAdmin(){
   }
 }
 
-function atualizarTudoAdminAgora(btn){
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Atualizando...'; }
-  const url=window.location.href.split('#')[0];
-  const separador=url.includes('?')?'&':'?';
-  window.location.href=url+separador+'refresh='+Date.now();
+async function atualizarTudoAdminAgora(btn){
+  if(btn && btn.dataset.atualizando==='1') return;
+  if(btn){
+    btn.dataset.atualizando='1';
+    btn.disabled=true;
+    btn.textContent='⏳ Atualizando...';
+  }
+  try{
+    // Não recarrega a página inteira: isso podia disparar várias consultas
+    // simultâneas e deixar o WebView travado durante a atualização.
+    const tarefas=[];
+    if(typeof carregarAgenda==='function') tarefas.push(Promise.resolve(carregarAgenda()));
+    if(typeof atualizarResumoDiaAdmin==='function') tarefas.push(Promise.resolve(atualizarResumoDiaAdmin()));
+    if(typeof carregarStatusBarbearia==='function') tarefas.push(Promise.resolve(carregarStatusBarbearia()));
+    await Promise.allSettled(tarefas);
+    if(typeof carregarCalendarioAgendaAdmin==='function'){
+      // Atualiza somente o calendário depois da agenda principal, sem bloquear a tela.
+      carregarCalendarioAgendaAdmin().catch(e=>console.warn('Calendário:',e));
+    }
+    if(btn) btn.textContent='✓ Atualizado';
+    if(typeof showToastAdmin==='function') showToastAdmin('Agenda atualizada.');
+  }catch(e){
+    console.error('Atualização geral do painel:',e);
+    if(btn) btn.textContent='↻ Tentar novamente';
+    if(typeof showToastAdmin==='function') showToastAdmin('Não foi possível atualizar tudo.');
+  }finally{
+    setTimeout(()=>{
+      if(btn){
+        btn.disabled=false;
+        btn.dataset.atualizando='0';
+        btn.textContent='↻ Atualizar';
+      }
+    },1200);
+  }
 }
 
 function atualizarMensagensAdminAgora(btn){
