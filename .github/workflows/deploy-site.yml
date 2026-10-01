@@ -1664,6 +1664,44 @@ jobs:
           print("Cores dos status da agenda forçadas.")
           PY
 
+
+      - name: Remover botão de perfil da barra inferior
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+
+          code=r'''
+          <style id="remover-perfil-barra-inferior">
+          /* O perfil fica somente no menu dos três pontos. */
+          .nav-profile-hidden{display:none!important}
+          </style>
+          <script id="remover-perfil-barra-inferior-script">
+          (function(){
+            function esconder(){
+              var itens=document.querySelectorAll("nav button, nav a, .bottom-nav button, .bottom-nav a, [class*='bottom'] button, [class*='bottom'] a");
+              Array.prototype.forEach.call(itens,function(el){
+                var t=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(t==="perfil" || t==="meu perfil" || t==="barbearia"){
+                  el.classList.add("nav-profile-hidden");
+                }
+              });
+            }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",esconder);
+            else esconder();
+            setTimeout(esconder,500);
+            setTimeout(esconder,1500);
+          })();
+          </script>
+          '''
+          if 'id="remover-perfil-barra-inferior"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Botão de perfil/barbearia removido da barra inferior; perfil permanece no menu dos três pontos.")
+          PY
+
       - name: Usar somente recuperação de senha por e-mail
         run: |
           python3 - <<'PY'
