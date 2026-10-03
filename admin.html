@@ -1308,9 +1308,8 @@ async function carregarMensagensAdmin(){
     lista.querySelectorAll('.message-client-card').forEach(card=>{
       card.addEventListener('click',()=>abrirConversaAdmin(card.dataset.clienteId));
     });
-    if(clienteMensagemSelecionado){
-      abrirConversaAdmin(clienteMensagemSelecionado);
-    }
+    // Não reabre a conversa automaticamente após atualizar a lista.
+    // Isso evitava a tela ficar presa/reabrindo a conversa continuamente.
   }catch(e){
     console.error('Erro ao carregar mensagens:',e);
     lista.innerHTML='<div class="empty">Não foi possível carregar as mensagens.</div>';
@@ -1385,15 +1384,21 @@ function voltarListaMensagensAdmin(){
   if(lista) lista.scrollIntoView({block:'start',behavior:'smooth'});
 }
 
-async function abrirConversaAdmin(clienteId){
-  clienteMensagemSelecionado=clienteId;
+function abrirConversaAdmin(clienteId){
+  clienteMensagemSelecionado=String(clienteId);
   const grupo=mensagensAdminCache.filter(m=>String(m.cliente_id)===String(clienteId));
   if(!grupo.length) return;
   const cliente=grupo[grupo.length-1];
   const conversaAdmin=document.getElementById('conversaAdmin');
-  conversaAdmin.classList.remove('hidden');
-  document.getElementById('conversaTitulo').textContent='💬 Conversa com '+(cliente.cliente_nome||'Cliente');
+  const titulo=document.getElementById('conversaTitulo');
   const area=document.getElementById('conversaMensagens');
+  if(!conversaAdmin||!titulo||!area) return;
+
+  // Abre a conversa imediatamente. Nenhuma consulta ao servidor é aguardada
+  // durante a abertura da tela.
+  conversaAdmin.classList.remove('hidden');
+  conversaAdmin.style.display='block';
+  titulo.textContent='💬 Conversa com '+(cliente.cliente_nome||'Cliente');
   area.innerHTML=grupo.map(m=>{
     const classe=m.remetente==='cliente'?'message-client-admin':'message-barber-admin';
     const autor=m.remetente==='cliente'?'Cliente':'Gleison Barbearia';
@@ -1403,14 +1408,18 @@ async function abrirConversaAdmin(clienteId){
     </div>`;
   }).join('');
   area.scrollTop=area.scrollHeight;
-  try{
-    await chamarRPC('marcar_mensagens_lidas_admin',{p_cliente_id:clienteId});
-    atualizarBadgeMensagensAdmin(mensagensAdminCache.filter(m=>m.remetente==='cliente' && !m.lida && String(m.cliente_id)!==String(clienteId)).length);
-    __mensagensAdminNaoLidasAnterior=mensagensAdminCache.filter(m=>m.remetente==='cliente' && !m.lida && String(m.cliente_id)!==String(clienteId)).length;
-    mensagensAdminCache.forEach(m=>{
-      if(String(m.cliente_id)===String(clienteId) && m.remetente==='cliente') m.lida=true;
-    });
-  }catch(e){ console.error(e); }
+
+  // Marca como lida em segundo plano, sem bloquear a interface.
+  chamarRPC('marcar_mensagens_lidas_admin',{p_cliente_id:String(clienteId)})
+    .then(()=>{
+      mensagensAdminCache.forEach(m=>{
+        if(String(m.cliente_id)===String(clienteId) && m.remetente==='cliente') m.lida=true;
+      });
+      const pendentes=mensagensAdminCache.filter(m=>m.remetente==='cliente' && !m.lida).length;
+      atualizarBadgeMensagensAdmin(pendentes);
+      __mensagensAdminNaoLidasAnterior=pendentes;
+    })
+    .catch(e=>console.error('Marcar mensagens lidas:',e));
 }
 
 
@@ -2900,13 +2909,3 @@ document.addEventListener('DOMContentLoaded', function(){
       if(tela==='mensagens' && typeof carregarMensagensAdmin==='function') carregarMensagensAdmin();
       if(tela==='precos' && typeof carregarPrecosAdmin==='function') carregarPrecosAdmin();
       if(tela==='conta' && typeof carregarDadosContaAdmin==='function') carregarDadosContaAdmin();
-      if(tela==='agendar' && typeof atualizarHorariosAdmin==='function') atualizarHorariosAdmin();
-    }catch(err){console.error('Navegação administrativa:',err);}
-    alvo.scrollIntoView({block:'start',behavior:'auto'});
-  }
-  window.adminAbrirTelaSegura=abrir;
-  document.addEventListener('click',function(e){
-    var b=e.target.closest ? e.target.closest('.admin-menu-btn[data-admin-tela]') : null;
-    if(!b)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
