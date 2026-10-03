@@ -138,13 +138,22 @@ jobs:
           print("Logo novo aplicado somente no banner; restante da tela preservado.")
           PY
 
-      - name: Aplicar banner escolhido pelo administrador aos clientes
+      - name: Mostrar somente o banner escolhido pelo administrador
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code=r'''<script id="banner-dinamico-admin-cliente">
+          code=r'''<style id="banner-admin-final-style">
+          .banner-admin-imagem-final{
+            background-size:100% 100%!important;
+            background-position:center!important;
+            background-repeat:no-repeat!important;
+          }
+          .banner-admin-imagem-final > *{visibility:hidden!important;}
+          .banner-admin-imagem-final .gleison-banner-logo-final{display:none!important;}
+          </style>
+          <script id="banner-admin-final-script">
           (function(){
             function acharBanner(){
               var nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
@@ -162,7 +171,7 @@ jobs:
             }
             async function aplicar(){
               try{
-                if(typeof supabaseClient==="undefined") return;
+                if(typeof supabaseClient==="undefined"){setTimeout(aplicar,500);return;}
                 var alvo=acharBanner();
                 if(!alvo){setTimeout(aplicar,500);return;}
                 var r=await supabaseClient.rpc("obter_config_banner",{});
@@ -170,23 +179,21 @@ jobs:
                 var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
                 if(!row || !row.imagem_url) return;
                 var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+Date.now();
+                alvo.classList.add("banner-admin-imagem-final");
                 alvo.style.setProperty("background-image","url("+JSON.stringify(url)+")","important");
-                alvo.style.setProperty("background-size","cover","important");
-                alvo.style.setProperty("background-position","center","important");
-                alvo.style.setProperty("background-repeat","no-repeat","important");
+                alvo.querySelectorAll("h1,h2,h3,p,button,a").forEach(function(e){e.style.setProperty("display","none","important");});
                 var old=alvo.querySelector(".gleison-banner-logo-final");
-                if(old) old.style.display="none";
+                if(old) old.style.setProperty("display","none","important");
               }catch(e){console.warn("Banner do administrador:",e);}
             }
-            function iniciar(){setTimeout(aplicar,700);setTimeout(aplicar,1800);setTimeout(aplicar,3500);}
-            if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",iniciar); else iniciar();
+            function iniciar(){setTimeout(aplicar,500);setTimeout(aplicar,1500);setTimeout(aplicar,3000);}
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
           })();
           </script>
           '''
-          if "</body>" in s and 'id="banner-dinamico-admin-cliente"' not in s:
+          if "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Banner escolhido pelo administrador será aplicado no banner do cliente.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
