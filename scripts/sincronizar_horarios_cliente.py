@@ -64,6 +64,38 @@ s = s.replace('for(let t=9*60;', 'for(let t=inicioAgenda;')
 # Atualização rápida enquanto a tela de agendamento está aberta.
 s = s.replace('},15000);', '},2000);')
 
+aviso_almoco = r'''
+// Aviso automático de horário de almoço.
+(function(){
+  async function atualizarAvisoAlmoco(){
+    try{
+      if(typeof supabaseClient==='undefined') return;
+      const {data,error}=await supabaseClient.rpc('obter_horarios_funcionamento',{});
+      if(error) throw error;
+      const h=Array.isArray(data)?data[0]:data;
+      const inicio=String(h&&h.hora_almoco_inicio||'11:30').slice(0,5);
+      const fim=String(h&&h.hora_almoco_fim||'14:00').slice(0,5);
+      const p=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+      const atual=Number(p.find(x=>x.type==='hour').value)*60+Number(p.find(x=>x.type==='minute').value);
+      const [ih,im]=inicio.split(':').map(Number), [fh,fm]=fim.split(':').map(Number);
+      const dentro=atual>=(ih*60+im)&&atual<(fh*60+fm);
+      let aviso=document.getElementById('avisoAlmocoBarbearia');
+      if(dentro){
+        if(!aviso){
+          aviso=document.createElement('div');
+          aviso.id='avisoAlmocoBarbearia';
+          aviso.style.cssText='margin:12px 0;padding:14px 16px;border:1px solid rgba(212,175,55,.55);border-radius:14px;background:#171b1f;color:#fff;font-weight:800;text-align:center;';
+          document.body.insertBefore(aviso,document.body.firstChild);
+        }
+        aviso.textContent='🍽️ O barbeiro está no horário de almoço. Os agendamentos voltam às '+fim+'.';
+        aviso.style.display='block';
+      }else if(aviso) aviso.style.display='none';
+    }catch(e){ console.warn('Aviso de almoço:',e); }
+  }
+  atualizarAvisoAlmoco();
+  setInterval(atualizarAvisoAlmoco,30000);
+})();
+'''
 s += aviso_almoco
 p.write_text(s, encoding="utf-8")
 print("Horários configuráveis aplicados à agenda do cliente.")
