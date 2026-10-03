@@ -1010,7 +1010,7 @@ async function carregarAgenda(){
         caminhoFoto = await buscarFotoPorTelefoneAdmin(a.telefone);
       }
       if(!caminhoFoto) caminhoFoto = a.foto_url || '';
-      const foto = caminhoFoto ? await criarUrlFoto(caminhoFoto) : '';
+      const foto = caminhoFoto ? await criarUrlFotoAdmin(caminhoFoto) : '';
       return {...a,foto_url_resolvida:foto};
     }));
 
