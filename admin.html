@@ -1288,12 +1288,17 @@ async function carregarMensagensAdmin(){
     }
     // Não faz consultas extras de foto para cada cliente aqui.
     // Isso evitava travamentos no WebView quando havia várias conversas.
-    const cards=grupos.map(grupo=>{
+    const cards=await Promise.all(grupos.map(async grupo=>{
       const ultima=grupo[grupo.length-1];
       const naoLidas=grupo.filter(m=>m.remetente==='cliente' && !m.lida).length;
+      const caminhoFoto=ultima.foto_url || '';
+      const foto=caminhoFoto ? await criarUrlFotoAdmin(caminhoFoto) : '';
+      const fotoHtml=foto
+        ? `<img src="${escapeHtml(foto)}" alt="Foto de ${escapeHtml(ultima.cliente_nome || 'Cliente')}" class="message-client-photo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);background:var(--panel2)">`
+        : `<div class="message-client-photo" style="display:grid;place-items:center;font-size:22px">👤</div>`;
       return `<div class="card message-client-card" data-cliente-id="${escapeHtml(ultima.cliente_id)}">
         <div class="message-client-head">
-          <div class="message-client-photo" style="display:grid;place-items:center;font-size:22px">👤</div>
+          ${fotoHtml}
           <div style="flex:1;min-width:0">
             <div style="font-weight:900">${escapeHtml(ultima.cliente_nome || 'Cliente')}</div>
             <div class="small">📞 ${escapeHtml(ultima.telefone || 'Não informado')}</div>
@@ -1303,7 +1308,7 @@ async function carregarMensagensAdmin(){
         <div class="small" style="margin-top:8px">${ultima.audio_url ? '🎤 Áudio' : escapeHtml(ultima.mensagem || '')}</div>
         <div class="message-meta-admin">${formatarMensagemData(ultima.criado_em)}</div>
       </div>`;
-    });
+    }));
     lista.innerHTML=cards.join('');
     lista.querySelectorAll('.message-client-card').forEach(card=>{
       card.addEventListener('click',()=>abrirConversaAdmin(card.dataset.clienteId));
