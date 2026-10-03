@@ -76,56 +76,87 @@ jobs:
           .banner-admin-safe{position:relative!important;overflow:hidden!important;}
           .banner-admin-safe-img{
             position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;
-            object-fit:cover!important;object-position:center!important;z-index:1000!important;display:block!important;
+            object-fit:cover!important;object-position:center!important;z-index:2147483647!important;display:block!important;
+            pointer-events:none!important;
           }
-          .banner-admin-safe-hidden{display:none!important;}
+          .banner-admin-safe-hidden{display:none!important;visibility:hidden!important;}
           </style>
           <script id="banner-admin-safe-script">
           (function(){
+            var ultimoUrl="";
+            var alvoAtual=null;
             function achar(){
               var ns=document.querySelectorAll("h1,h2,h3,div,p,span");
               for(var i=0;i<ns.length;i++){
                 var t=String(ns[i].innerText||ns[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
                 if(t.indexOf("seu estilo começa aqui")>=0){
                   var p=ns[i].parentElement;
-                  for(var n=0;p&&n<8;n++,p=p.parentElement){
+                  for(var n=0;p&&n<10;n++,p=p.parentElement){
                     var r=p.getBoundingClientRect();
-                    if(r.width>=innerWidth*.85&&r.height>=220&&r.height<=700)return p;
+                    if(r.width>=document.documentElement.clientWidth*.85&&r.height>=180&&r.height<=800)return p;
                   }
                 }
               }
-              return null;
+              return alvoAtual;
+            }
+            function proteger(a,img){
+              if(!a||!img)return;
+              a.classList.add("banner-admin-safe");
+              Array.from(a.children).forEach(function(el){
+                if(el!==img)el.classList.add("banner-admin-safe-hidden");
+              });
+              img.style.setProperty("display","block","important");
+              img.style.setProperty("z-index","2147483647","important");
             }
             async function aplicar(){
-              var alvo=achar();
-              if(!alvo){setTimeout(aplicar,700);return;}
               try{
-                if(typeof supabaseClient==="undefined"){setTimeout(aplicar,700);return;}
+                var a=achar();
+                if(!a){setTimeout(aplicar,300);return;}
+                alvoAtual=a;
+                if(typeof supabaseClient==="undefined"){setTimeout(aplicar,300);return;}
                 var r=await supabaseClient.rpc("obter_config_banner",{});
                 if(r.error)throw r.error;
                 var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
-                if(!row||!row.imagem_url)return;
-                alvo.classList.add("banner-admin-safe");
-                var img=alvo.querySelector(".banner-admin-safe-img");
+                if(!row||!row.imagem_url){setTimeout(aplicar,500);return;}
+                var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+encodeURIComponent(row.atualizado_em||Date.now());
+                var img=a.querySelector(".banner-admin-safe-img");
                 if(!img){
                   img=document.createElement("img");
                   img.className="banner-admin-safe-img";
                   img.alt="Gleison Barbearia";
-                  alvo.appendChild(img);
+                  a.appendChild(img);
                 }
-                img.onload=function(){
-                  Array.from(alvo.children).forEach(function(el){if(el!==img)el.classList.add("banner-admin-safe-hidden");});
-                };
-                img.onerror=function(){img.remove();alvo.classList.remove("banner-admin-safe");console.warn("Falha ao carregar banner");};
-                img.src=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+Date.now();
-              }catch(e){console.warn("Banner:",e);setTimeout(aplicar,1500);}
+                if(img.src!==url){img.src=url;}
+                proteger(a,img);
+                ultimoUrl=url;
+              }catch(e){console.warn("Banner:",e);setTimeout(aplicar,700);}
             }
-            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",aplicar);else aplicar();
+            function vigiar(){
+              var a=achar();
+              if(!a)return;
+              var img=a.querySelector(".banner-admin-safe-img");
+              if(!img){
+                aplicar();
+                return;
+              }
+              proteger(a,img);
+            }
+            function iniciar(){
+              aplicar();
+              setInterval(vigiar,250);
+              new MutationObserver(vigiar).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class","style"]});
+            }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
           })();
           </script>
           '''
-          if "</body>" in s:s=s.replace("</body>",code+"</body>",1)
+          if "</body>" in s and 'id="banner-admin-safe-script"' not in s:
+              s=s.replace("</body>",code+"</body>",1)
+          elif 'id="banner-admin-safe-script"' in s:
+              import re
+              s=re.sub(r'<style id="banner-admin-safe-style">.*?</script>',code.strip(),s,count=1,flags=re.S)
           p.write_text(s,encoding="utf-8")
+          print("Banner do administrador protegido contra sobrescrita.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
