@@ -2302,7 +2302,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path("site/index.html").read_text(encoding="utf-8")
-          for x in ("id="gleison-banner-dinamico-admin-script"","obter_config_banner","qumwaizimhlucnqyshbu.supabase.co"):
+          for x in ('id="gleison-banner-dinamico-admin-script"','obter_config_banner','qumwaizimhlucnqyshbu.supabase.co'):
               if x not in s: raise SystemExit("Validação falhou: "+x)
           print("Validação do banner editável OK.")
           PY
