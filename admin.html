@@ -1271,29 +1271,29 @@ async function atualizarMensagensPendentesAdminSilencioso(){
 async function carregarMensagensAdmin(){
   const lista=document.getElementById('mensagensAdminLista');
   if(!lista) return;
+  // Evita duas consultas pesadas ao mesmo tempo quando o botão de mensagens
+  // recebe mais de um evento de toque/clique no celular.
+  if(window.__carregandoMensagensAdmin) return;
+  window.__carregandoMensagensAdmin=true;
   lista.innerHTML='<div class="empty">Carregando mensagens...</div>';
   try{
     const rows=await chamarRPC('listar_mensagens_admin',{});
-    mensagensAdminCache=rows||[];
+    mensagensAdminCache=Array.isArray(rows)?rows:[];
     const grupos=agruparMensagensPorCliente(mensagensAdminCache);
     if(!grupos.length){
       lista.innerHTML='<div class="empty">Nenhuma mensagem recebida ainda.</div>';
-      document.getElementById('conversaAdmin').classList.add('hidden');
+      const conversa=document.getElementById('conversaAdmin');
+      if(conversa) conversa.classList.add('hidden');
       return;
     }
-    const cards=await Promise.all(grupos.map(async grupo=>{
+    // Não faz consultas extras de foto para cada cliente aqui.
+    // Isso evitava travamentos no WebView quando havia várias conversas.
+    const cards=grupos.map(grupo=>{
       const ultima=grupo[grupo.length-1];
-      let caminhoFoto = '';
-      // Usa a foto atual do cadastro, não a foto antiga gravada na mensagem.
-      if(ultima.telefone){
-        caminhoFoto = await buscarFotoPorTelefoneAdmin(ultima.telefone);
-      }
-      if(!caminhoFoto) caminhoFoto = ultima.foto_url || '';
-      const foto=await criarUrlFotoAdmin(caminhoFoto);
       const naoLidas=grupo.filter(m=>m.remetente==='cliente' && !m.lida).length;
       return `<div class="card message-client-card" data-cliente-id="${escapeHtml(ultima.cliente_id)}">
         <div class="message-client-head">
-          ${foto ? `<img class="message-client-photo" src="${escapeHtml(foto)}" alt="Foto do cliente">` : `<div class="message-client-photo" style="display:grid;place-items:center;font-size:22px">👤</div>`}
+          <div class="message-client-photo" style="display:grid;place-items:center;font-size:22px">👤</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:900">${escapeHtml(ultima.cliente_nome || 'Cliente')}</div>
             <div class="small">📞 ${escapeHtml(ultima.telefone || 'Não informado')}</div>
@@ -1303,7 +1303,7 @@ async function carregarMensagensAdmin(){
         <div class="small" style="margin-top:8px">${ultima.audio_url ? '🎤 Áudio' : escapeHtml(ultima.mensagem || '')}</div>
         <div class="message-meta-admin">${formatarMensagemData(ultima.criado_em)}</div>
       </div>`;
-    }));
+    });
     lista.innerHTML=cards.join('');
     lista.querySelectorAll('.message-client-card').forEach(card=>{
       card.addEventListener('click',()=>abrirConversaAdmin(card.dataset.clienteId));
@@ -1312,8 +1312,10 @@ async function carregarMensagensAdmin(){
       abrirConversaAdmin(clienteMensagemSelecionado);
     }
   }catch(e){
-    console.error(e);
+    console.error('Erro ao carregar mensagens:',e);
     lista.innerHTML='<div class="empty">Não foi possível carregar as mensagens.</div>';
+  }finally{
+    window.__carregandoMensagensAdmin=false;
   }
 }
 
@@ -2374,6 +2376,9 @@ function abrirTelaAdminCheia(tela){
   alvo.classList.add('admin-fullscreen');
   document.body.classList.add('admin-tela-cheia-aberta');
   mostrarTelaAdmin(tela);
+  if(tela==='mensagens'){
+    setTimeout(()=>carregarMensagensAdmin().catch(e=>console.error('Mensagens:',e)),0);
+  }
   setTimeout(()=>alvo.scrollTo({top:0,behavior:'instant'}),30);
 }
 
@@ -2864,7 +2869,7 @@ document.addEventListener('DOMContentLoaded', function(){
  document.addEventListener('click',function(e){
    var b=e.target.closest && e.target.closest('.admin-menu-btn[data-admin-tela]');
    if(!b)return;
-   e.preventDefault();e.stopPropagation();
+   e.preventDefault();e.stopImmediatePropagation();
    abrir(b.getAttribute('data-admin-tela'));
  },true);
 })();
