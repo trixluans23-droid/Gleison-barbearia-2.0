@@ -2165,51 +2165,81 @@ jobs:
           print("Recuperação de senha por e-mail OK.")
           PY
 
-      - name: Ajuste final do banner com a nova imagem
+      - name: Aplicar a nova imagem preenchendo todo o banner
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="gleison-banner-ultimo-ajuste">
-          .gleison-logo-banner-unico{position:absolute!important;right:3%!important;top:50%!important;transform:translateY(-50%)!important;width:43%!important;height:90%!important;object-fit:contain!important;z-index:99!important;pointer-events:none!important}
+
+          code=r'''
+          <style id="gleison-banner-imagem-inteira">
+          .gleison-banner-imagem-inteira{
+            position:relative!important;
+            overflow:hidden!important;
+            background-image:url("logo-barbearia.png?v=banner-final")!important;
+            background-size:cover!important;
+            background-position:center center!important;
+            background-repeat:no-repeat!important;
+          }
+          .gleison-banner-imagem-inteira [class*="gc-logo-banner"],
+          .gleison-banner-imagem-inteira [class*="gleison-banner-logo"],
+          .gleison-banner-imagem-inteira [class*="gc-banner-logo"],
+          .gleison-banner-imagem-inteira .gleison-logo-banner-unico{
+            display:none!important;
+          }
           </style>
-          <script id="gleison-banner-ultimo-ajuste-script">
+          <script id="gleison-banner-imagem-inteira-script">
           (function(){
-            function limparEAplicar(){
-              document.querySelectorAll('[class*="gc-logo-banner"],[class*="gleison-banner-logo"],[class*="gc-banner-logo"]').forEach(function(e){e.remove()});
+            function aplicar(){
+              document.querySelectorAll('[class*="gc-logo-banner"],[class*="gleison-banner-logo"],[class*="gc-banner-logo"],.gleison-logo-banner-unico').forEach(function(e){e.remove()});
               var alvo=null,titulo=null,nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
               for(var i=0;i<nodes.length;i++){
                 var t=String(nodes[i].innerText||nodes[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
                 if(t.indexOf("seu estilo começa aqui")>=0){titulo=nodes[i];break}
               }
-              if(!titulo)return;
-              var vw=document.documentElement.clientWidth;
-              for(var p=titulo.parentElement,n=0;p&&n<10;n++,p=p.parentElement){
-                var r=p.getBoundingClientRect();
-                if(r.width>=vw*0.90 && r.height>=200 && r.height<=600){alvo=p;break}
+              if(titulo){
+                var vw=document.documentElement.clientWidth;
+                for(var p=titulo.parentElement,n=0;p&&n<10;n++,p=p.parentElement){
+                  var r=p.getBoundingClientRect();
+                  if(r.width>=vw*0.90 && r.height>=200 && r.height<=700){alvo=p;break}
+                }
+              }
+              if(!alvo){
+                var els=document.querySelectorAll("main section,main>div,section,body>div,body>main");
+                var melhor=null,top=Infinity;
+                for(var j=0;j<els.length;j++){
+                  var el=els[j],rr=el.getBoundingClientRect(),st=getComputedStyle(el);
+                  if(el.closest("header,nav")||rr.width<vw*0.90||rr.height<200||rr.height>700||st.display==="none"||st.visibility==="hidden")continue;
+                  if(rr.top>=0 && rr.top<top){melhor=el;top=rr.top}
+                }
+                alvo=melhor;
               }
               if(!alvo)return;
-              alvo.style.position="relative";
-              var img=document.createElement("img");
-              img.className="gleison-logo-banner-unico";
-              img.src="logo-barbearia.png?v=final";
-              img.alt="Gleison Barbearia";
-              alvo.appendChild(img);
+              alvo.classList.add("gleison-banner-imagem-inteira");
+              alvo.style.backgroundImage='url("logo-barbearia.png?v=banner-final")';
+              alvo.style.backgroundSize="cover";
+              alvo.style.backgroundPosition="center center";
+              alvo.style.backgroundRepeat="no-repeat";
             }
-            function rodar(){limparEAplicar()}
-            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){rodar();setTimeout(rodar,500);setTimeout(rodar,1500);setTimeout(rodar,3000)});
-            else{rodar();setTimeout(rodar,500);setTimeout(rodar,1500);setTimeout(rodar,3000)}
+            function iniciar(){
+              aplicar();
+              setTimeout(aplicar,300);
+              setTimeout(aplicar,800);
+              setTimeout(aplicar,1500);
+              setTimeout(aplicar,3000);
+            }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
           })();
           </script>
           '''
-          if 'id="gleison-banner-ultimo-ajuste-script"' not in s and "</body>" in s:
+          if 'id="gleison-banner-imagem-inteira-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Ajuste final aplicado somente ao banner.")
+          print("Nova imagem aplicada como fundo cobrindo todo o banner.")
           PY
 
-      - name: Configurar GitHub Pages
+            - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Criar pacote do site
