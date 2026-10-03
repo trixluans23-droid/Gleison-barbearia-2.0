@@ -9,6 +9,7 @@
 <style>
 :root{--bg:#070809;--panel:#111417;--panel2:#171b1f;--gold:#d8a63b;--gold2:#f2c766;--text:#f5f5f5;--muted:#a8adb3;--green:#4bd37b;--red:#ff5c5c;--line:#2a2f34}
 *{box-sizing:border-box}
+.hidden{display:none!important}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
 .app{max-width:700px;margin:auto;min-height:100vh;background:linear-gradient(180deg,#090a0c,#0c0f12);padding-bottom:30px}
 header{padding:22px 18px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
@@ -495,18 +496,28 @@ async function obterToken(){
 
 async function chamarRPC(nome, body){
   const token=await obterToken();
-  const resposta = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + nome, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': 'Bearer ' + token
-    },
-    body: JSON.stringify(body)
-  });
-  const texto = await resposta.text();
-  if(!resposta.ok) throw new Error('Supabase ' + resposta.status + ': ' + texto);
-  try { return JSON.parse(texto); } catch { return texto; }
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),20000);
+  try{
+    const resposta = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + nome, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const texto = await resposta.text();
+    if(!resposta.ok) throw new Error('Supabase ' + resposta.status + ': ' + texto);
+    try { return JSON.parse(texto); } catch { return texto; }
+  }catch(e){
+    if(e && e.name==='AbortError') throw new Error('Tempo esgotado ao consultar o servidor.');
+    throw e;
+  }finally{
+    clearTimeout(timer);
+  }
 }
 
 async function verificarAdminAtual(){
@@ -1343,15 +1354,7 @@ async function atualizarTudoAdminAgora(btn){
 }
 
 function atualizarMensagensAdminAgora(btn){
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='⏳ Atualizando...';
-  }
-  // Recarrega a página com um parâmetro único para impedir cache e garantir
-  // que as mensagens mais recentes sejam buscadas novamente.
-  const url=window.location.href.split('#')[0];
-  const separador=url.includes('?')?'&':'?';
-  window.location.href=url+separador+'refresh='+Date.now();
+  atualizarMensagensAdminComFeedback();
 }
 
 async function atualizarMensagensAdminComFeedback(){
@@ -1375,7 +1378,7 @@ async function atualizarMensagensAdminComFeedback(){
 function voltarListaMensagensAdmin(){
   clienteMensagemSelecionado=null;
   const conversa=document.getElementById('conversaAdmin');
-  if(conversa) conversa.style.display='none';
+  if(conversa) conversa.classList.add('hidden');
   const lista=document.getElementById('mensagensAdminLista');
   if(lista) lista.scrollIntoView({block:'start',behavior:'smooth'});
 }
@@ -1386,7 +1389,7 @@ async function abrirConversaAdmin(clienteId){
   if(!grupo.length) return;
   const cliente=grupo[grupo.length-1];
   const conversaAdmin=document.getElementById('conversaAdmin');
-  conversaAdmin.style.display='block';
+  conversaAdmin.classList.remove('hidden');
   document.getElementById('conversaTitulo').textContent='💬 Conversa com '+(cliente.cliente_nome||'Cliente');
   const area=document.getElementById('conversaMensagens');
   area.innerHTML=grupo.map(m=>{
@@ -1421,6 +1424,7 @@ window.abrirMensagemClienteAgendaAdmin=async function(id){
   titulo.textContent='💬 Mensagem para '+(ag.cliente_nome||'Cliente');
   area.innerHTML='<div class="empty">Nova conversa com este cliente. Digite sua mensagem abaixo.</div>';
   conversa.classList.remove('hidden');
+  conversa.style.display='block';
   const view=document.getElementById('viewMensagens');
   if(view){
     document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active','admin-fullscreen'));
@@ -1438,20 +1442,47 @@ async function responderMensagem(){
   const mensagem=(input.value||'').trim();
   if(!clienteMensagemSelecionado){ showToastAdmin('Selecione uma conversa primeiro.'); return; }
   if(!mensagem){ showToastAdmin('Digite uma resposta.'); return; }
+  if(window.__mensagemAdminEnviando) return;
+  window.__mensagemAdminEnviando=true;
   const botao=document.querySelector('.message-compose-admin .btn.primary');
   if(botao){botao.disabled=true;botao.textContent='Enviando...';}
+  if(input) input.disabled=true;
   try{
+    const clienteId=String(clienteMensagemSelecionado);
     await chamarRPC('enviar_mensagem_barbeiro',{
-      p_cliente_id:clienteMensagemSelecionado,
+      p_cliente_id:clienteId,
       p_mensagem:mensagem
     });
-    input.value='';
+
+    const agora=new Date().toISOString();
+    mensagensAdminCache.push({
+      cliente_id:clienteId,
+      cliente_nome:(mensagensAdminCache.find(m=>String(m.cliente_id)===clienteId)||{}).cliente_nome || 'Cliente',
+      remetente:'barbeiro',
+      mensagem:mensagem,
+      criado_em:agora,
+      lida:true
+    });
+
+    const area=document.getElementById('conversaMensagens');
+    if(area){
+      const bolha=document.createElement('div');
+      bolha.className='message-barber-admin';
+      bolha.innerHTML='<div>'+escapeHtml(mensagem)+'</div><div class="message-meta-admin">Gleison Barbearia • '+escapeHtml(formatarMensagemData(agora))+'</div>';
+      area.appendChild(bolha);
+      area.scrollTop=area.scrollHeight;
+    }
+    if(input) input.value='';
     showToastAdmin('Resposta enviada!');
-    await carregarMensagensAdmin();
+
+    // Atualiza a lista em segundo plano, sem travar a conversa.
+    carregarMensagensAdmin().catch(e=>console.error('Atualização das mensagens:',e));
   }catch(e){
-    console.error(e);
+    console.error('Erro ao enviar mensagem:',e);
     showToastAdmin('Não foi possível enviar a resposta.');
   }finally{
+    window.__mensagemAdminEnviando=false;
+    if(input) input.disabled=false;
     if(botao){botao.disabled=false;botao.textContent='Enviar';}
   }
 }
