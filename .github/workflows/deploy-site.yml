@@ -85,7 +85,7 @@ jobs:
               var nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
               for(var i=0;i<nodes.length;i++){
                 var t=String(nodes[i].innerText||nodes[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if(t.indexOf("seu estilo começa aqui")>=0){titulo=nodes[i];break;}
+                if((t.indexOf("seu estilo")>=0 && t.indexOf("começa")>=0) || t.indexOf("agendamento online")>=0){titulo=nodes[i];break;}
               }
               if(!titulo)return;
               for(var p=titulo.parentElement,n=0;p&&n<8;n++,p=p.parentElement){
@@ -100,13 +100,13 @@ jobs:
               if(!logo){
                 logo=document.createElement("img");
                 logo.className="gleison-banner-logo-final";
-                logo.src="logo-barbearia.png";
+                logo.src="logo-barbearia.png?v=2";
                 logo.alt="Gleison Barbearia";
                 alvo.appendChild(logo);
               }
             }
-            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,500);setTimeout(aplicar,1500)});
-            else{setTimeout(aplicar,500);setTimeout(aplicar,1500);}
+            function iniciar(){ aplicar(); setTimeout(aplicar,500); setTimeout(aplicar,1500); setTimeout(aplicar,3000); if(window.MutationObserver){new MutationObserver(function(){aplicar();}).observe(document.body,{childList:true,subtree:true});} }
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar); else iniciar();
           })();
           </script>
           '''
