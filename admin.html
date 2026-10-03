@@ -1020,6 +1020,10 @@ async function carregarAgenda(){
         ${fluxoHtml(status)}
         ${proximaAcaoHtml(status)}
 
+        <div class="actions">
+          <button class="btn" type="button" data-mensagem-cliente-id="${escapeHtml(a.id)}">💬 Mensagem</button>
+        </div>
+
         ${status==='agendado' ? `
         <div class="actions">
           <button class="btn primary" onclick="alterarStatus('${escapeHtml(a.id)}','confirmado')">✓ Confirmar</button>
@@ -1033,6 +1037,14 @@ async function carregarAgenda(){
         </div>` : ''}
       </div>`;
     }).join('');
+
+    lista.querySelectorAll('[data-mensagem-cliente-id]').forEach(btn => {
+      btn.addEventListener('click', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        const id=this.getAttribute('data-mensagem-cliente-id');
+        if(id && typeof window.abrirMensagemClienteAgendaAdmin==='function') window.abrirMensagemClienteAgendaAdmin(id);
+      });
+    });
 
     lista.querySelectorAll('[data-remarcar-id]').forEach(btn => {
       btn.addEventListener('click', function(ev){
@@ -1316,6 +1328,29 @@ async function abrirConversaAdmin(clienteId){
 }
 
 
+
+window.abrirMensagemClienteAgendaAdmin=async function(id){
+  const ag=(window.__agendaAdminRows||[]).find(x=>String(x.id)===String(id));
+  if(!ag) return;
+  clienteMensagemSelecionado=ag.cliente_id;
+  const conversa=document.getElementById('conversaAdmin');
+  const titulo=document.getElementById('conversaTitulo');
+  const area=document.getElementById('conversaMensagens');
+  if(!conversa||!titulo||!area) return;
+  titulo.textContent='💬 Mensagem para '+(ag.cliente_nome||'Cliente');
+  area.innerHTML='<div class="empty">Nova conversa com este cliente. Digite sua mensagem abaixo.</div>';
+  conversa.classList.remove('hidden');
+  const view=document.getElementById('viewMensagens');
+  if(view){
+    document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active','admin-fullscreen'));
+    document.body.classList.remove('admin-tela-cheia-aberta');
+    view.classList.add('active','admin-fullscreen');
+    document.body.classList.add('admin-tela-cheia-aberta');
+    view.scrollIntoView({block:'start',behavior:'auto'});
+  }
+  const input=document.getElementById('respostaMensagem');
+  if(input){ input.value=''; setTimeout(()=>input.focus(),100); }
+};
 
 async function responderMensagem(){
   const input=document.getElementById('respostaMensagem');
