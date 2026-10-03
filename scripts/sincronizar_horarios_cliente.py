@@ -64,6 +64,7 @@ s = s.replace('for(let t=9*60;', 'for(let t=inicioAgenda;')
 # Atualização rápida enquanto a tela de agendamento está aberta.
 s = s.replace('},15000);', '},2000);')
 
+
 aviso_almoco = r'''
 // Aviso automático de horário de almoço.
 (function(){
