@@ -2840,7 +2840,7 @@ document.addEventListener('DOMContentLoaded', function(){
     try{
       if(tela==='agenda' && typeof carregarAgenda==='function') carregarAgenda();
       if(tela==='financeiro' && typeof carregarFinanceiroAdmin==='function') carregarFinanceiroAdmin();
-      if(tela==='mensagens' && typeof atualizarMensagensAdminAgora==='function') atualizarMensagensAdminAgora();
+      if(tela==='mensagens' && typeof carregarMensagensAdmin==='function') carregarMensagensAdmin();
       if(tela==='precos' && typeof carregarPrecosAdmin==='function') carregarPrecosAdmin();
       if(tela==='conta' && typeof carregarDadosContaAdmin==='function') carregarDadosContaAdmin();
       if(tela==='agendar' && typeof atualizarHorariosAdmin==='function') atualizarHorariosAdmin();
