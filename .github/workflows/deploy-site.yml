@@ -70,6 +70,8 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
           code=r'''
@@ -84,21 +86,22 @@ jobs:
           </style>
           <script id="banner-admin-safe-script">
           (function(){
-            var tentativas=0;
-            function achar(){
+            var estado={banner:null,img:null,observer:null,timer:null,ignorarAte:0,rodando:false};
+
+            function acharBanner(){
               var ns=document.querySelectorAll("h1,h2,h3");
               for(var i=0;i<ns.length;i++){
                 var t=String(ns[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if(t.indexOf("seu estilo começa aqui")>=0){
-                  var p=ns[i].parentElement;
-                  for(var n=0;p&&n<10;n++,p=p.parentElement){
-                    var r=p.getBoundingClientRect();
-                    if(r.width>=document.documentElement.clientWidth*.85&&r.height>=180&&r.height<=800)return p;
-                  }
+                if(t.indexOf("seu estilo")<0 && t.indexOf("agendamento online")<0) continue;
+                var p=ns[i].parentElement;
+                for(var n=0;p&&n<10;n++,p=p.parentElement){
+                  var r=p.getBoundingClientRect();
+                  if(r.width>=document.documentElement.clientWidth*.85 && r.height>=180 && r.height<=800) return p;
                 }
               }
               return null;
             }
+
             function proteger(a,img){
               if(!a||!img)return;
               a.classList.add("banner-admin-safe");
@@ -106,31 +109,81 @@ jobs:
                 if(el!==img)el.classList.add("banner-admin-safe-hidden");
               });
             }
-            function aplicar(){
-              var a=achar();
-              if(!a||typeof supabaseClient==="undefined"){
-                if(tentativas++<5)setTimeout(aplicar,1000);
-                return;
-              }
-              supabaseClient.rpc("obter_config_banner",{}).then(function(r){
-                if(r.error)throw r.error;
-                var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
-                if(!row||!row.imagem_url)return;
-                var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+encodeURIComponent(row.atualizado_em||Date.now());
-                var img=a.querySelector(".banner-admin-safe-img");
-                if(!img){
-                  img=document.createElement("img");
-                  img.className="banner-admin-safe-img";
-                  img.alt="Gleison Barbearia";
-                  a.appendChild(img);
+
+            function observar(){
+              if(estado.observer || !document.body || !window.MutationObserver)return;
+              estado.observer=new MutationObserver(function(mutations){
+                if(Date.now()<estado.ignorarAte || estado.rodando)return;
+                var relevante=false;
+                for(var i=0;i<mutations.length&&!relevante;i++){
+                  var m=mutations[i];
+                  if(estado.banner && (m.target===estado.banner || (m.target.nodeType===1 && estado.banner.contains(m.target)))){
+                    relevante=true;
+                    break;
+                  }
+                  for(var j=0;j<m.addedNodes.length&&!relevante;j++){
+                    var node=m.addedNodes[j];
+                    if(node.nodeType!==1)continue;
+                    var txt=String(node.textContent||"").slice(0,5000).toLowerCase();
+                    if(txt.indexOf("seu estilo")>=0 || txt.indexOf("agendamento online")>=0) relevante=true;
+                  }
                 }
-                img.src=url;
-                proteger(a,img);
-              }).catch(function(e){console.warn("Banner:",e);});
+                if(relevante){
+                  clearTimeout(estado.timer);
+                  estado.timer=setTimeout(aplicar,180);
+                }
+              });
+              estado.observer.observe(document.body,{childList:true,subtree:true});
             }
+
+            function aplicar(){
+              if(estado.rodando)return;
+              estado.rodando=true;
+              try{
+                var a=acharBanner();
+                if(!a || typeof supabaseClient==="undefined"){
+                  estado.rodando=false;
+                  return;
+                }
+                estado.banner=a;
+                supabaseClient.rpc("obter_config_banner",{}).then(function(r){
+                  if(r.error)throw r.error;
+                  var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
+                  if(!row || !row.imagem_url){estado.rodando=false;return;}
+                  var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+encodeURIComponent(row.atualizado_em||Date.now());
+                  var img=a.querySelector(".banner-admin-safe-img");
+                  if(!img){
+                    img=document.createElement("img");
+                    img.className="banner-admin-safe-img";
+                    img.alt="Gleison Barbearia";
+                    a.appendChild(img);
+                  }
+                  estado.img=img;
+                  img.onload=function(){
+                    proteger(a,img);
+                    estado.ignorarAte=Date.now()+800;
+                  };
+                  img.onerror=function(){
+                    estado.ignorarAte=Date.now()+300;
+                  };
+                  img.src=url;
+                  proteger(a,img);
+                  estado.ignorarAte=Date.now()+800;
+                  observar();
+                }).catch(function(e){console.warn("Banner:",e);}).finally(function(){estado.rodando=false;});
+              }catch(e){
+                estado.rodando=false;
+                console.warn("Banner:",e);
+              }
+            }
+
             function iniciar(){
+              aplicar();
               setTimeout(aplicar,800);
+              setTimeout(aplicar,2200);
+              observar();
             }
+
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
           })();
           </script>
@@ -138,10 +191,9 @@ jobs:
           if "</body>" in s and 'id="banner-admin-safe-script"' not in s:
               s=s.replace("</body>",code+"</body>",1)
           elif 'id="banner-admin-safe-script"' in s:
-              import re
               s=re.sub(r'<style id="banner-admin-safe-style">.*?</script>',code.strip(),s,count=1,flags=re.S)
           p.write_text(s,encoding="utf-8")
-          print("Banner aplicado com busca leve e limite de tentativas.")
+          print("Banner dinâmico protegido com observação limitada à própria área.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
