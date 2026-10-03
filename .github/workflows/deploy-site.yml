@@ -66,67 +66,47 @@ jobs:
           PY
 
 
-      - name: Ajustar banner com logo à direita e texto à esquerda
+      - name: Colocar logo somente dentro do banner principal
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="banner-logo-direita-final">
-          .gc-banner-final{position:relative!important;overflow:hidden!important;background:#0b0d0f!important;background-image:none!important}
-          .gc-banner-logo-final{position:absolute!important;right:2%!important;top:50%!important;transform:translateY(-50%)!important;width:44%!important;height:92%!important;object-fit:contain!important;z-index:3!important;pointer-events:none!important}
-          .gc-banner-texto-final{position:relative!important;z-index:4!important;width:52%!important;max-width:52%!important}
-          .gc-banner-final h1,.gc-banner-final h2,.gc-banner-final p,.gc-banner-final button,.gc-banner-final a{position:relative!important;z-index:4!important}
-          .gc-banner-final h1,.gc-banner-final h2,.gc-banner-final p{max-width:100%!important}
-          @media(max-width:600px){
-            .gc-banner-logo-final{width:44%!important;right:1%!important}
-            .gc-banner-texto-final{width:53%!important;max-width:53%!important}
-          }
+          code='''<style id="logo-banner-limpo">
+          .gc-logo-banner-limpo{position:absolute!important;right:3%!important;top:50%!important;transform:translateY(-50%)!important;width:42%!important;height:88%!important;object-fit:contain!important;z-index:20!important;pointer-events:none!important}
           </style>
-          <script id="banner-logo-direita-final-script">
+          <script id="logo-banner-limpo-script">
           (function(){
             function aplicar(){
-              var todos=document.querySelectorAll("body *");
-              var banner=null,h1=null,p=null,btn=null;
-              for(var i=0;i<todos.length;i++){
-                var e=todos[i],t=String(e.innerText||e.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if(!h1 && t.indexOf("seu estilo começa aqui")>=0 && /^(h1|h2|div|section|article)$/i.test(e.tagName||"")) h1=e;
-                if(!p && t.indexOf("corte, barba e cuidado masculino")>=0 && /^(p|div|span)$/i.test(e.tagName||"")) p=e;
-                if(!btn && t.indexOf("agendar horário")>=0 && /^(button|a|div)$/i.test(e.tagName||"")) btn=e;
+              if(document.querySelector(".gc-logo-banner-limpo")) return;
+              var el=document.querySelectorAll("h1,h2");
+              for(var i=0;i<el.length;i++){
+                var t=(el[i].textContent||"").replace(/\\s+/g," ").trim().toLowerCase();
+                if(t.indexOf("seu estilo começa aqui")<0) continue;
+                var p=el[i];
+                for(var n=0;n<8 && p;n++,p=p.parentElement){
+                  var st=getComputedStyle(p),r=p.getBoundingClientRect();
+                  if(r.width>500 && r.height>250 && st.backgroundImage && st.backgroundImage!=="none"){
+                    if(st.position==="static") p.style.position="relative";
+                    var img=document.createElement("img");
+                    img.className="gc-logo-banner-limpo";
+                    img.src="logo-barbearia.png";
+                    img.alt="Gleison Barbearia";
+                    p.appendChild(img);
+                    return;
+                  }
+                }
               }
-              if(!h1) return;
-              var x=h1;
-              for(var n=0;n<6 && x;n++,x=x.parentElement){
-                var r=x.getBoundingClientRect();
-                if(r.width>300 && r.height>180){banner=x;break;}
-              }
-              if(!banner) return;
-              banner.classList.add("gc-banner-final");
-              var logo=banner.querySelector(".gc-banner-logo-final");
-              if(!logo){
-                logo=document.createElement("img");
-                logo.className="gc-banner-logo-final";
-                logo.src="logo-barbearia.png";
-                logo.alt="Gleison Barbearia";
-                banner.appendChild(logo);
-              }
-              h1.style.width="100%";
-              h1.style.maxWidth="100%";
-              h1.style.zIndex="4";
-              if(p){p.style.width="100%";p.style.maxWidth="100%";p.style.zIndex="4";}
-              if(btn){btn.style.position="relative";btn.style.zIndex="5";}
-              var parent=h1.parentElement;
-              if(parent && parent!==banner) parent.classList.add("gc-banner-texto-final");
             }
-            if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,300);setTimeout(aplicar,1200)});
-            else {setTimeout(aplicar,300);setTimeout(aplicar,1200);}
+            if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,500);setTimeout(aplicar,1500)});
+            else {setTimeout(aplicar,500);setTimeout(aplicar,1500);}
           })();
           </script>
           '''
-          if 'id="banner-logo-direita-final-script"' not in s and "</body>" in s:
+          if 'id="logo-banner-limpo-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Banner ajustado: logo à direita, texto e botão à esquerda; fundo da página preservado.")
+          print("Logo aplicado somente no banner original, sem alterar o layout da página.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
