@@ -64,5 +64,6 @@ s = s.replace('for(let t=9*60;', 'for(let t=inicioAgenda;')
 # Atualização rápida enquanto a tela de agendamento está aberta.
 s = s.replace('},15000);', '},2000);')
 
-s += aviso_almoco\np.write_text(s, encoding="utf-8")
+s += aviso_almoco
+p.write_text(s, encoding="utf-8")
 print("Horários configuráveis aplicados à agenda do cliente.")
