@@ -66,7 +66,7 @@ jobs:
           PY
 
 
-      - name: Aplicar banner do administrador sem travar a página
+      - name: Aplicar banner do administrador de forma leve
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -77,17 +77,18 @@ jobs:
           .banner-admin-safe{position:relative!important;overflow:hidden!important;}
           .banner-admin-safe-img{
             position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;
-            object-fit:cover!important;object-position:center!important;z-index:2147483647!important;display:block!important;
+            object-fit:cover!important;object-position:center!important;z-index:9999!important;display:block!important;
             pointer-events:none!important;
           }
           .banner-admin-safe-hidden{display:none!important;visibility:hidden!important;}
           </style>
           <script id="banner-admin-safe-script">
           (function(){
+            var tentativas=0;
             function achar(){
-              var ns=document.querySelectorAll("h1,h2,h3,div,p,span");
+              var ns=document.querySelectorAll("h1,h2,h3");
               for(var i=0;i<ns.length;i++){
-                var t=String(ns[i].innerText||ns[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                var t=String(ns[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
                 if(t.indexOf("seu estilo começa aqui")>=0){
                   var p=ns[i].parentElement;
                   for(var n=0;p&&n<10;n++,p=p.parentElement){
@@ -104,18 +105,17 @@ jobs:
               Array.prototype.forEach.call(a.children,function(el){
                 if(el!==img)el.classList.add("banner-admin-safe-hidden");
               });
-              img.style.setProperty("display","block","important");
-              img.style.setProperty("z-index","2147483647","important");
             }
-            async function aplicar(){
-              try{
-                var a=achar();
-                if(!a){setTimeout(aplicar,500);return;}
-                if(typeof supabaseClient==="undefined"){setTimeout(aplicar,500);return;}
-                var r=await supabaseClient.rpc("obter_config_banner",{});
+            function aplicar(){
+              var a=achar();
+              if(!a||typeof supabaseClient==="undefined"){
+                if(tentativas++<5)setTimeout(aplicar,1000);
+                return;
+              }
+              supabaseClient.rpc("obter_config_banner",{}).then(function(r){
                 if(r.error)throw r.error;
                 var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
-                if(!row||!row.imagem_url){setTimeout(aplicar,1000);return;}
+                if(!row||!row.imagem_url)return;
                 var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+encodeURIComponent(row.atualizado_em||Date.now());
                 var img=a.querySelector(".banner-admin-safe-img");
                 if(!img){
@@ -124,20 +124,12 @@ jobs:
                   img.alt="Gleison Barbearia";
                   a.appendChild(img);
                 }
-                if(img.getAttribute("data-banner-url")!==url){
-                  img.setAttribute("data-banner-url",url);
-                  img.src=url;
-                }
+                img.src=url;
                 proteger(a,img);
-                setTimeout(function(){proteger(a,img)},1000);
-                setTimeout(function(){proteger(a,img)},3000);
-              }catch(e){console.warn("Banner:",e);setTimeout(aplicar,1200);}
+              }).catch(function(e){console.warn("Banner:",e);});
             }
             function iniciar(){
-              aplicar();
-              setTimeout(aplicar,1500);
-              setTimeout(aplicar,4000);
-              setTimeout(aplicar,8000);
+              setTimeout(aplicar,800);
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
           })();
@@ -149,7 +141,7 @@ jobs:
               import re
               s=re.sub(r'<style id="banner-admin-safe-style">.*?</script>',code.strip(),s,count=1,flags=re.S)
           p.write_text(s,encoding="utf-8")
-          print("Banner aplicado sem MutationObserver e sem loop de vigilância.")
+          print("Banner aplicado com busca leve e limite de tentativas.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
