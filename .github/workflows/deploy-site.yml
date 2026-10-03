@@ -98,9 +98,21 @@ jobs:
             height:100%!important;
             object-fit:cover!important;
             object-position:center!important;
-            z-index:2147483647!important;
+            z-index:1!important;
             display:block!important;
             pointer-events:none!important;
+          }
+          .banner-admin-safe .heroText{
+            z-index:2!important;
+          }
+          .banner-admin-safe .heroText h1,
+          .banner-admin-safe .heroText p{
+            display:none!important;
+          }
+          .banner-admin-safe .heroText .booking{
+            display:inline-flex!important;
+            position:relative!important;
+            z-index:3!important;
           }
           .banner-admin-safe-hidden{
             display:none!important;
