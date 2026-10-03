@@ -66,34 +66,52 @@ jobs:
           PY
 
 
-      - name: Aplicar nova imagem da barbearia
+      - name: Aplicar nova imagem somente no banner principal
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="logo-barbearia-online-style">
-          #gc-logo-barbearia-online{display:block;width:min(100%,360px);height:auto;max-height:260px;object-fit:contain;margin:10px auto 18px;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+          code='''<style id="logo-barbearia-banner-style">
+          .gc-logo-banner-principal{position:absolute!important;right:0!important;top:50%!important;transform:translateY(-50%)!important;width:48%!important;height:92%!important;max-width:none!important;object-fit:contain!important;object-position:center!important;z-index:1!important;pointer-events:none!important}
+          .gc-banner-conteudo-principal{position:relative!important;z-index:2!important}
+          @media(max-width:600px){.gc-logo-banner-principal{width:49%!important;height:90%!important;right:1%!important}}
           </style>
-          <script id="logo-barbearia-online-script">
+          <script id="logo-barbearia-banner-script">
           (function(){
             var logo="logo-barbearia.png";
             function aplicar(){
               var todos=document.querySelectorAll("body *");
+              var alvo=null;
               for(var i=0;i<todos.length;i++){
                 var el=todos[i];
-                var texto=String(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                var texto=String(el.innerText||el.textContent||"").replace(/\\s+/g," ").trim().toLowerCase();
                 if(texto.indexOf("seu estilo começa aqui")===-1) continue;
-                var alvo=el;
-                for(var n=0;n<6 && alvo;n++,alvo=alvo.parentElement){
-                  var r=alvo.getBoundingClientRect();
-                  if(r.width>300 && r.height>220){
-                    alvo.style.backgroundImage="url('"+logo+"')";
-                    alvo.style.backgroundSize="cover";
-                    alvo.style.backgroundPosition="center";
-                    alvo.style.backgroundRepeat="no-repeat";
-                    alvo.setAttribute("data-logo-barbearia-aplicado","1");
-                    return;
+                var p=el;
+                for(var n=0;n<6 && p;n++,p=p.parentElement){
+                  var r=p.getBoundingClientRect();
+                  if(r.width>300 && r.height>220 && r.width/r.height>1.15 && r.width<1200){
+                    alvo=p; break;
+                  }
+                }
+                if(alvo) break;
+              }
+              if(!alvo) return;
+              alvo.style.position= getComputedStyle(alvo).position==="static" ? "relative" : getComputedStyle(alvo).position;
+              var antiga=alvo.querySelector(".gc-logo-banner-principal");
+              if(!antiga){
+                antiga=document.createElement("img");
+                antiga.className="gc-logo-banner-principal";
+                antiga.src=logo;
+                antiga.alt="Gleison Barbearia";
+                alvo.insertBefore(antiga,alvo.firstChild);
+              }
+              var filhos=alvo.children;
+              for(var j=0;j<filhos.length;j++){
+                if(filhos[j]!==antiga && !filhos[j].classList.contains("gc-banner-conteudo-principal")){
+                  var rr=filhos[j].getBoundingClientRect();
+                  if(rr.width>100 && rr.height>40 && (filhos[j].innerText||"").trim()){
+                    filhos[j].classList.add("gc-banner-conteudo-principal");
                   }
                 }
               }
@@ -103,10 +121,10 @@ jobs:
           })();
           </script>
           '''
-          if 'id="logo-barbearia-online-script"' not in s and "</body>" in s:
+          if 'id="logo-barbearia-banner-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Nova imagem aplicada ao banner principal.")
+          print("Nova imagem colocada somente dentro do banner principal; fundo da página preservado.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
