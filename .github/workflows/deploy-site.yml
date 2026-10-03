@@ -66,65 +66,67 @@ jobs:
           PY
 
 
-      - name: Aplicar nova imagem somente no banner principal
+      - name: Ajustar banner com logo à direita e texto à esquerda
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="logo-barbearia-banner-style">
-          .gc-logo-banner-principal{position:absolute!important;right:0!important;top:50%!important;transform:translateY(-50%)!important;width:48%!important;height:92%!important;max-width:none!important;object-fit:contain!important;object-position:center!important;z-index:1!important;pointer-events:none!important}
-          .gc-banner-conteudo-principal{position:relative!important;z-index:2!important}
-          @media(max-width:600px){.gc-logo-banner-principal{width:49%!important;height:90%!important;right:1%!important}}
+          code='''<style id="banner-logo-direita-final">
+          .gc-banner-final{position:relative!important;overflow:hidden!important;background:#0b0d0f!important;background-image:none!important}
+          .gc-banner-logo-final{position:absolute!important;right:2%!important;top:50%!important;transform:translateY(-50%)!important;width:44%!important;height:92%!important;object-fit:contain!important;z-index:3!important;pointer-events:none!important}
+          .gc-banner-texto-final{position:relative!important;z-index:4!important;width:52%!important;max-width:52%!important}
+          .gc-banner-final h1,.gc-banner-final h2,.gc-banner-final p,.gc-banner-final button,.gc-banner-final a{position:relative!important;z-index:4!important}
+          .gc-banner-final h1,.gc-banner-final h2,.gc-banner-final p{max-width:100%!important}
+          @media(max-width:600px){
+            .gc-banner-logo-final{width:44%!important;right:1%!important}
+            .gc-banner-texto-final{width:53%!important;max-width:53%!important}
+          }
           </style>
-          <script id="logo-barbearia-banner-script">
+          <script id="banner-logo-direita-final-script">
           (function(){
-            var logo="logo-barbearia.png";
             function aplicar(){
               var todos=document.querySelectorAll("body *");
-              var alvo=null;
+              var banner=null,h1=null,p=null,btn=null;
               for(var i=0;i<todos.length;i++){
-                var el=todos[i];
-                var texto=String(el.innerText||el.textContent||"").replace(/\\s+/g," ").trim().toLowerCase();
-                if(texto.indexOf("seu estilo começa aqui")===-1) continue;
-                var p=el;
-                for(var n=0;n<6 && p;n++,p=p.parentElement){
-                  var r=p.getBoundingClientRect();
-                  if(r.width>300 && r.height>220 && r.width/r.height>1.15 && r.width<1200){
-                    alvo=p; break;
-                  }
-                }
-                if(alvo) break;
+                var e=todos[i],t=String(e.innerText||e.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(!h1 && t.indexOf("seu estilo começa aqui")>=0 && /^(h1|h2|div|section|article)$/i.test(e.tagName||"")) h1=e;
+                if(!p && t.indexOf("corte, barba e cuidado masculino")>=0 && /^(p|div|span)$/i.test(e.tagName||"")) p=e;
+                if(!btn && t.indexOf("agendar horário")>=0 && /^(button|a|div)$/i.test(e.tagName||"")) btn=e;
               }
-              if(!alvo) return;
-              alvo.style.position= getComputedStyle(alvo).position==="static" ? "relative" : getComputedStyle(alvo).position;
-              var antiga=alvo.querySelector(".gc-logo-banner-principal");
-              if(!antiga){
-                antiga=document.createElement("img");
-                antiga.className="gc-logo-banner-principal";
-                antiga.src=logo;
-                antiga.alt="Gleison Barbearia";
-                alvo.insertBefore(antiga,alvo.firstChild);
+              if(!h1) return;
+              var x=h1;
+              for(var n=0;n<6 && x;n++,x=x.parentElement){
+                var r=x.getBoundingClientRect();
+                if(r.width>300 && r.height>180){banner=x;break;}
               }
-              var filhos=alvo.children;
-              for(var j=0;j<filhos.length;j++){
-                if(filhos[j]!==antiga && !filhos[j].classList.contains("gc-banner-conteudo-principal")){
-                  var rr=filhos[j].getBoundingClientRect();
-                  if(rr.width>100 && rr.height>40 && (filhos[j].innerText||"").trim()){
-                    filhos[j].classList.add("gc-banner-conteudo-principal");
-                  }
-                }
+              if(!banner) return;
+              banner.classList.add("gc-banner-final");
+              var logo=banner.querySelector(".gc-banner-logo-final");
+              if(!logo){
+                logo=document.createElement("img");
+                logo.className="gc-banner-logo-final";
+                logo.src="logo-barbearia.png";
+                logo.alt="Gleison Barbearia";
+                banner.appendChild(logo);
               }
+              h1.style.width="100%";
+              h1.style.maxWidth="100%";
+              h1.style.zIndex="4";
+              if(p){p.style.width="100%";p.style.maxWidth="100%";p.style.zIndex="4";}
+              if(btn){btn.style.position="relative";btn.style.zIndex="5";}
+              var parent=h1.parentElement;
+              if(parent && parent!==banner) parent.classList.add("gc-banner-texto-final");
             }
             if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,300);setTimeout(aplicar,1200)});
             else {setTimeout(aplicar,300);setTimeout(aplicar,1200);}
           })();
           </script>
           '''
-          if 'id="logo-barbearia-banner-script"' not in s and "</body>" in s:
+          if 'id="banner-logo-direita-final-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Nova imagem colocada somente dentro do banner principal; fundo da página preservado.")
+          print("Banner ajustado: logo à direita, texto e botão à esquerda; fundo da página preservado.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
