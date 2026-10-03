@@ -10,6 +10,7 @@ on:
       - '.github/workflows/deploy-site.yml'
       - 'scripts/sincronizar_horarios_cliente.py'
       - 'scripts/adicionar_foto_perfil_cliente.py'
+      - 'file_00000000418c820e9ae7d7eeedbc5a98.png'
 
 permissions:
   contents: read
@@ -42,6 +43,7 @@ jobs:
 
           cp GleisonBarbeariaAndroid/app/src/main/assets/index.html site/index.html
           cp admin.html site/admin.html
+          cp file_00000000418c820e9ae7d7eeedbc5a98.png site/logo-barbearia.png
 
           echo "Sistema preparado para publicação."
           python3 scripts/sincronizar_horarios_cliente.py
@@ -64,7 +66,14 @@ jobs:
           PY
 
 
-      - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
+      - name: Aplicar nova imagem da barbearia
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("site/index.html")
+          s=p.read_text(encoding="utf-8")
+          code=r'''\n<style id="logo-barbearia-online-style">\n#gc-logo-barbearia-online{display:block;width:min(100%,360px);height:auto;max-height:260px;object-fit:contain;margin:10px auto 18px;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}\n</style>\n<script id="logo-barbearia-online-script">\n(function(){\n  var logo="logo-barbearia.png";\n  function aplicar(){\n    if(document.getElementById("gc-logo-barbearia-online")) return;\n    var imgs=[].slice.call(document.images).filter(function(i){\n      var src=String(i.currentSrc||i.src||"").toLowerCase();\n      var id=String(i.id||"").toLowerCase();\n      var alt=String(i.alt||"").toLowerCase();\n      var cls=String(i.className||"").toLowerCase();\n      return src && !/supabase|storage|cliente|perfil|foto|avatar/.test(src+" "+id+" "+alt+" "+cls);\n    });\n    var alvo=null;\n    for(var n=0;n<imgs.length;n++){\n      var x=imgs[n], txt=String((x.alt||"")+" "+(x.id||"")+" "+(x.className||"")).toLowerCase();\n      if(/logo|barbearia|gleison/.test(txt)){alvo=x;break;}\n    }\n    if(alvo){\n      alvo.src=logo;\n      alvo.removeAttribute("srcset");\n      alvo.id=alvo.id||"gc-logo-barbearia-online";\n      alvo.alt="Gleison Barbearia";\n      alvo.style.objectFit="contain";\n      return;\n    }\n    var header=document.querySelector("header");\n    var base=document.querySelector("main")||document.body;\n    var img=document.createElement("img");\n    img.id="gc-logo-barbearia-online"; img.src=logo; img.alt="Gleison Barbearia";\n    if(header) header.insertAdjacentElement("afterend",img); else base.insertBefore(img,base.firstChild);\n  }\n  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,300)});\n  else setTimeout(aplicar,300);\n})();\n</script>\n'''
+          if 'id="logo-barbearia-online-script"' not in s and "</body>" in s:\n              s=s.replace("</body>",code+"</body>",1)\n          p.write_text(s,encoding="utf-8")\n          print("Nova imagem da Gleison Barbearia configurada.")\n          PY\n\n      - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
         run: |
           python3 - <<'PY'
           from pathlib import Path
