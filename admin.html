@@ -293,6 +293,10 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div><label for="horaFechamentoAdmin">Terça a sexta — fechamento (ex.: 20:30 ou 23:00)</label><input id="horaFechamentoAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
 </div>
 <div style="margin-top:10px"><label for="horaFechamentoSabadoAdmin">Sábado — fechamento (ex.: 23:00)</label><input id="horaFechamentoSabadoAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+<div><label for="horaAlmocoInicioAdmin">🍽️ Início do almoço</label><input id="horaAlmocoInicioAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
+<div><label for="horaAlmocoFimAdmin">🍽️ Fim do almoço</label><input id="horaAlmocoFimAdmin" type="time" min="00:00" max="23:30" style="width:100%;box-sizing:border-box"/></div>
+</div>
 <button class="btn primary" id="btnSalvarHorariosAdmin" onclick="salvarHorariosFuncionamentoAdmin()" style="width:100%;margin-top:12px;min-height:50px;font-weight:900" type="button">💾 Salvar horários</button>
 <div id="horariosFuncionamentoMensagem" class="small" style="margin-top:9px;font-weight:800"></div>
 </div>
@@ -551,7 +555,9 @@ function mostrarPainel(){
 window.__horariosFuncionamentoAdmin = {
   abertura: '09:00',
   fechamento: '20:30',
-  fechamentoSabado: '23:00'
+  fechamentoSabado: '23:00',
+  almocoInicio: '11:30',
+  almocoFim: '14:00'
 };
 
 function minutosHorarioAdmin(hora){
@@ -576,10 +582,14 @@ async function carregarHorariosFuncionamentoAdmin(){
     const aberturaAtual=String(h.hora_abertura||'09:00').slice(0,5);
     const fechamentoAtual=String(h.hora_fechamento||'20:30').slice(0,5);
     const fechamentoSabadoAtual=String(h.hora_fechamento_sabado||'23:00').slice(0,5);
-    window.__horariosFuncionamentoAdmin={abertura:aberturaAtual,fechamento:fechamentoAtual,fechamentoSabado:fechamentoSabadoAtual};
+    const almocoInicioAtual=String(h.hora_almoco_inicio||'11:30').slice(0,5);
+    const almocoFimAtual=String(h.hora_almoco_fim||'14:00').slice(0,5);
+    window.__horariosFuncionamentoAdmin={abertura:aberturaAtual,fechamento:fechamentoAtual,fechamentoSabado:fechamentoSabadoAtual,almocoInicio:almocoInicioAtual,almocoFim:almocoFimAtual};
     document.getElementById('horaAberturaAdmin').value=aberturaAtual;
     document.getElementById('horaFechamentoAdmin').value=fechamentoAtual;
     document.getElementById('horaFechamentoSabadoAdmin').value=fechamentoSabadoAtual;
+    document.getElementById('horaAlmocoInicioAdmin').value=almocoInicioAtual;
+    document.getElementById('horaAlmocoFimAdmin').value=almocoFimAtual;
     if(msg){msg.textContent='🟢 Horários atuais carregados.';msg.style.color='#5ee27a';}
   }catch(e){
     console.error(e);
@@ -591,15 +601,18 @@ async function salvarHorariosFuncionamentoAdmin(){
   const abertura=document.getElementById('horaAberturaAdmin').value;
   const fechamento=document.getElementById('horaFechamentoAdmin').value;
   const fechamentoSabado=document.getElementById('horaFechamentoSabadoAdmin').value;
+  const almocoInicio=document.getElementById('horaAlmocoInicioAdmin').value;
+  const almocoFim=document.getElementById('horaAlmocoFimAdmin').value;
   const btn=document.getElementById('btnSalvarHorariosAdmin');
   const msg=document.getElementById('horariosFuncionamentoMensagem');
-  if(!abertura||!fechamento||!fechamentoSabado){msg.textContent='⚠️ Informe todos os horários.';msg.style.color='#ff667a';return;}
+  if(!abertura||!fechamento||!fechamentoSabado||!almocoInicio||!almocoFim){msg.textContent='⚠️ Informe todos os horários.';msg.style.color='#ff667a';return;}
   if(abertura>=fechamento){msg.textContent='⚠️ A abertura deve ser antes do fechamento de terça a sexta.';msg.style.color='#ff667a';return;}
   if(abertura>=fechamentoSabado){msg.textContent='⚠️ A abertura deve ser antes do fechamento de sábado.';msg.style.color='#ff667a';return;}
+  if(almocoInicio>=almocoFim){msg.textContent='⚠️ O início do almoço deve ser antes do fim do almoço.';msg.style.color='#ff667a';return;}
   try{
     btn.disabled=true;btn.textContent='Salvando...';
-    await chamarRPC('definir_horarios_funcionamento',{p_hora_abertura:abertura+':00',p_hora_fechamento:fechamento+':00',p_hora_fechamento_sabado:fechamentoSabado+':00'});
-    window.__horariosFuncionamentoAdmin={abertura,fechamento,fechamentoSabado};
+    await chamarRPC('definir_horarios_funcionamento',{p_hora_abertura:abertura+':00',p_hora_fechamento:fechamento+':00',p_hora_fechamento_sabado:fechamentoSabado+':00',p_hora_almoco_inicio:almocoInicio+':00',p_hora_almoco_fim:almocoFim+':00'});
+    window.__horariosFuncionamentoAdmin={abertura,fechamento,fechamentoSabado,almocoInicio,almocoFim};
     msg.textContent='✅ Horários salvos. A agenda já passa a usar os novos horários.';msg.style.color='#5ee27a';
   }catch(e){
     console.error(e);msg.textContent='❌ '+(e.message||'Não foi possível salvar os horários.');msg.style.color='#ff667a';
