@@ -1479,6 +1479,29 @@ jobs:
               return new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
             };
             function aplicar(){
+            var bannerUrl="logo-barbearia.png";
+            var todos=document.querySelectorAll("body *");
+            for(var i=0;i<todos.length;i++){
+              var el=todos[i];
+              var texto=String(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+              if(texto.indexOf("seu estilo começa aqui")===-1) continue;
+              var alvo=el;
+              for(var n=0;n<5 && alvo;n++,alvo=alvo.parentElement){
+                var r=alvo.getBoundingClientRect();
+                var bg=getComputedStyle(alvo).backgroundImage||"";
+                if(r.width>300 && r.height>220 && (bg.indexOf("url(")>=0 || n>0)){
+                  alvo.style.backgroundImage="url('"+bannerUrl+"')";
+                  alvo.style.backgroundSize="cover";
+                  alvo.style.backgroundPosition="center";
+                  alvo.style.backgroundRepeat="no-repeat";
+                  var imgs=alvo.querySelectorAll("img");
+                  for(var j=0;j<imgs.length;j++){imgs[j].src=bannerUrl;imgs[j].removeAttribute("srcset");}
+                  alvo.setAttribute("data-logo-barbearia-aplicado","1");
+                  return;
+                }
+              }
+            }
+
               try{
                 if(typeof window.formatDateTime==="function")window.formatDateTime=formatarSP;
               }catch(e){}
