@@ -66,7 +66,7 @@ jobs:
           PY
 
 
-      - name: Aplicar banner do administrador de forma leve
+      - name: Corrigir carregamento do banner sem piscada
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -74,20 +74,36 @@ jobs:
 
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
+
           code=r'''
           <style id="banner-admin-safe-style">
-          .banner-admin-safe{position:relative!important;overflow:hidden!important;}
+          .banner-admin-safe{
+            position:relative!important;
+            overflow:hidden!important;
+            background:#0b0d0f!important;
+          }
           .banner-admin-safe-img{
-            position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;
-            object-fit:cover!important;object-position:center!important;z-index:9999!important;display:block!important;
+            position:absolute!important;
+            inset:0!important;
+            width:100%!important;
+            height:100%!important;
+            object-fit:cover!important;
+            object-position:center!important;
+            z-index:2147483647!important;
+            display:block!important;
             pointer-events:none!important;
           }
-          .banner-admin-safe-hidden{display:none!important;visibility:hidden!important;}
-          .banner-admin-safe:not(.banner-admin-safe-ready){visibility:hidden!important;}
+          .banner-admin-safe-hidden{
+            display:none!important;
+            visibility:hidden!important;
+          }
+          .banner-admin-safe:not(.banner-admin-safe-ready){
+            visibility:hidden!important;
+          }
           </style>
           <script id="banner-admin-safe-script">
           (function(){
-            var estado={banner:null,img:null,observer:null,timer:null,ignorarAte:0,rodando:false};
+            var estado={banner:null,img:null,observer:null,tentativas:0};
 
             function acharBanner(){
               var ns=document.querySelectorAll("h1,h2,h3");
@@ -111,46 +127,27 @@ jobs:
               });
             }
 
-            function observar(){
-              if(estado.observer || !document.body || !window.MutationObserver)return;
-              estado.observer=new MutationObserver(function(mutations){
-                if(Date.now()<estado.ignorarAte || estado.rodando)return;
-                var relevante=false;
-                for(var i=0;i<mutations.length&&!relevante;i++){
-                  var m=mutations[i];
-                  if(estado.banner && (m.target===estado.banner || (m.target.nodeType===1 && estado.banner.contains(m.target)))){
-                    relevante=true;
-                    break;
-                  }
-                  for(var j=0;j<m.addedNodes.length&&!relevante;j++){
-                    var node=m.addedNodes[j];
-                    if(node.nodeType!==1)continue;
-                    var txt=String(node.textContent||"").slice(0,5000).toLowerCase();
-                    if(txt.indexOf("seu estilo")>=0 || txt.indexOf("agendamento online")>=0) relevante=true;
-                  }
-                }
-                if(relevante){
-                  clearTimeout(estado.timer);
-                  estado.timer=setTimeout(aplicar,180);
-                }
-              });
-              estado.observer.observe(document.body,{childList:true,subtree:true});
-            }
-
             function aplicar(){
-              if(estado.rodando)return;
-              estado.rodando=true;
-              try{
-                var a=acharBanner();
-                if(!a || typeof supabaseClient==="undefined"){
-                  estado.rodando=false;
+              if(estado.banner || estado.tentativas>40)return;
+              var a=acharBanner();
+              if(!a){
+                estado.tentativas++;
+                setTimeout(aplicar,50);
+                return;
+              }
+              estado.banner=a;
+              proteger(a,null);
+
+              var tentar=function(){
+                if(typeof supabaseClient==="undefined"){
+                  setTimeout(tentar,50);
                   return;
                 }
-                estado.banner=a;
                 supabaseClient.rpc("obter_config_banner",{}).then(function(r){
                   if(r.error)throw r.error;
                   var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
-                  if(!row || !row.imagem_url){estado.rodando=false;return;}
+                  if(!row || !row.imagem_url)throw new Error("Banner não configurado");
+
                   var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+encodeURIComponent(row.atualizado_em||Date.now());
                   var img=a.querySelector(".banner-admin-safe-img");
                   if(!img){
@@ -163,36 +160,55 @@ jobs:
                   img.onload=function(){
                     proteger(a,img);
                     a.classList.add("banner-admin-safe-ready");
-                    estado.ignorarAte=Date.now()+800;
+                    if(estado.observer){estado.observer.disconnect();estado.observer=null;}
                   };
                   img.onerror=function(){
-                    estado.ignorarAte=Date.now()+300;
+                    a.classList.remove("banner-admin-safe-ready");
+                    a.style.visibility="visible";
+                    if(estado.observer){estado.observer.disconnect();estado.observer=null;}
                   };
                   img.src=url;
                   proteger(a,img);
-                  estado.ignorarAte=Date.now()+800;
-                  observar();
-                }).catch(function(e){console.warn("Banner:",e);}).finally(function(){estado.rodando=false;});
-              }catch(e){
-                estado.rodando=false;
-                console.warn("Banner:",e);
-              }
+
+                  if(window.MutationObserver && document.body){
+                    estado.observer=new MutationObserver(function(){
+                      if(!estado.img||!estado.banner)return;
+                      proteger(estado.banner,estado.img);
+                    });
+                    estado.observer.observe(a,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
+                  }
+                }).catch(function(e){
+                  console.warn("Banner:",e);
+                  a.style.visibility="visible";
+                });
+              };
+              tentar();
             }
 
             function iniciar(){
               aplicar();
             }
 
-            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
+            if(document.readyState==="loading"){
+              document.addEventListener("DOMContentLoaded",iniciar,{once:true});
+            }else{
+              iniciar();
+            }
           })();
           </script>
           '''
-          if "</body>" in s and 'id="banner-admin-safe-script"' not in s:
-              s=s.replace("</body>",code+"</body>",1)
-          elif 'id="banner-admin-safe-script"' in s:
-              s=re.sub(r'<style id="banner-admin-safe-style">.*?</script>',code.strip(),s,count=1,flags=re.S)
+
+          # O bloqueio entra no início do body para impedir que o banner original
+          # apareça antes da imagem configurada pelo administrador.
+          s=re.sub(r'<style id="banner-admin-safe-style">.*?</script>\s*',"",s,flags=re.S)
+          if 'id="banner-admin-safe-script"' not in s:
+              s=s.replace("<body>","<body>"+code,1)
+          else:
+              s=re.sub(r'<script id="banner-admin-safe-script">.*?</script>\s*',"",s,flags=re.S)
+              s=s.replace("<body>","<body>"+code,1)
+
           p.write_text(s,encoding="utf-8")
-          print("Banner dinâmico protegido com observação limitada à própria área.")
+          print("Banner agora é bloqueado no início do carregamento e só aparece após a imagem escolhida estar pronta.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
