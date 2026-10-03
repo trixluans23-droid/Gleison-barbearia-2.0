@@ -2375,6 +2375,16 @@ function abrirTelaAdminCheia(tela){
   Object.values(views).forEach(v=>v&&v.classList.remove('admin-fullscreen'));
   alvo.classList.add('admin-fullscreen');
   document.body.classList.add('admin-tela-cheia-aberta');
+  // Ao entrar pelo menu, começa sempre na lista de clientes.
+  // A conversa só abre quando o cliente for escolhido.
+  if(tela==='mensagens'){
+    clienteMensagemSelecionado=null;
+    const conversa=document.getElementById('conversaAdmin');
+    if(conversa){
+      conversa.classList.add('hidden');
+      conversa.style.display='';
+    }
+  }
   mostrarTelaAdmin(tela);
   if(tela==='mensagens'){
     setTimeout(()=>carregarMensagensAdmin().catch(e=>console.error('Mensagens:',e)),0);
@@ -2900,8 +2910,3 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!b)return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    abrir(b.getAttribute('data-admin-tela'));
-  },true);
-})();
-</script></body>
-</html>
