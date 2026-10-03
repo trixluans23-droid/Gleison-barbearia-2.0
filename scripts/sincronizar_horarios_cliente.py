@@ -97,6 +97,9 @@ aviso_almoco = r'''
   setInterval(atualizarAvisoAlmoco,30000);
 })();
 '''
-s += aviso_almoco
+# O aviso precisa entrar como JavaScript dentro do HTML, e não como texto solto.
+s = s.replace('</body>', '<script>\n' + aviso_almoco + '\n</script>\n</body>', 1)
+if '</script>' not in s or 'id=\'avisoAlmocoBarbearia\'' not in s:
+    raise SystemExit("bloco do aviso não foi inserido corretamente")
 p.write_text(s, encoding="utf-8")
 print("Horários configuráveis aplicados à agenda do cliente.")
