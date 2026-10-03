@@ -2239,7 +2239,7 @@ jobs:
           print("Nova imagem aplicada como fundo cobrindo todo o banner.")
           PY
 
-            - name: Configurar GitHub Pages
+      - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Criar pacote do site
