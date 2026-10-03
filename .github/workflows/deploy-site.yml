@@ -81,31 +81,53 @@ jobs:
           <script id="gleison-banner-logo-final-script">
           (function(){
             function aplicar(){
-              var alvo=null, titulo=null;
-              var nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
-              for(var i=0;i<nodes.length;i++){
-                var t=String(nodes[i].innerText||nodes[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if((t.indexOf("seu estilo")>=0 && t.indexOf("começa")>=0) || t.indexOf("agendamento online")>=0){titulo=nodes[i];break;}
+              var alvo=null;
+              var els=document.querySelectorAll("main section,main>div,section,body>div,body>main");
+              var melhor=null, melhorTop=Infinity;
+              for(var i=0;i<els.length;i++){
+                var el=els[i];
+                if(el.closest("header,nav")) continue;
+                var r=el.getBoundingClientRect();
+                var st=getComputedStyle(el);
+                if(r.width < window.innerWidth*0.85 || r.height < 220 || r.height > 700) continue;
+                if(r.bottom < 0 || r.top > window.innerHeight*1.5) continue;
+                if(st.display==="none" || st.visibility==="hidden") continue;
+                if(r.top < melhorTop){melhor=el;melhorTop=r.top;}
               }
-              if(!titulo)return;
-              for(var p=titulo.parentElement,n=0;p&&n<8;n++,p=p.parentElement){
-                var r=p.getBoundingClientRect(), vw=document.documentElement.clientWidth;
-                if(r.width>=vw*0.85 && r.height>=250 && r.height<=650){alvo=p;break;}
+              alvo=melhor;
+              if(!alvo){
+                var nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
+                for(var j=0;j<nodes.length;j++){
+                  var t=String(nodes[j].innerText||nodes[j].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                  if(t.indexOf("seu estilo")>=0 || t.indexOf("agendamento")>=0){
+                    for(var p=nodes[j].parentElement,n=0;p&&n<8;n++,p=p.parentElement){
+                      var rr=p.getBoundingClientRect();
+                      if(rr.width>=window.innerWidth*0.85 && rr.height>=220 && rr.height<=700){alvo=p;break;}
+                    }
+                    if(alvo) break;
+                  }
+                }
               }
               if(!alvo)return;
               alvo.classList.add("gleison-banner-final");
-              var conteudo=titulo.parentElement;
-              if(conteudo)conteudo.classList.add("gleison-banner-content-final");
               var logo=alvo.querySelector(".gleison-banner-logo-final");
               if(!logo){
                 logo=document.createElement("img");
                 logo.className="gleison-banner-logo-final";
-                logo.src="logo-barbearia.png?v=2";
+                logo.src="logo-barbearia.png?v=3";
                 logo.alt="Gleison Barbearia";
                 alvo.appendChild(logo);
+              }else{
+                logo.src="logo-barbearia.png?v=3";
               }
             }
-            function iniciar(){ aplicar(); setTimeout(aplicar,500); setTimeout(aplicar,1500); setTimeout(aplicar,3000); if(window.MutationObserver){new MutationObserver(function(){aplicar();}).observe(document.body,{childList:true,subtree:true});} }
+            function iniciar(){
+              aplicar();
+              setTimeout(aplicar,300);
+              setTimeout(aplicar,800);
+              setTimeout(aplicar,1500);
+              setTimeout(aplicar,3000);
+            }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar); else iniciar();
           })();
           </script>
