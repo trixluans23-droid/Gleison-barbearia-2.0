@@ -1078,6 +1078,44 @@ async function carregarAgenda(){
 }
 
 
+function abrirMensagemClienteAgendaAdmin(agendamentoId){
+  const ag=(window.__agendaAdminRows||[]).find(x=>String(x.id)===String(agendamentoId));
+  if(!ag){
+    showToastAdmin('Cliente não encontrado na agenda.');
+    return;
+  }
+  const clienteId=ag.cliente_id || ag.clienteId;
+  if(!clienteId){
+    showToastAdmin('Não foi possível identificar o cliente.');
+    return;
+  }
+
+  // Abre diretamente a tela de mensagens usando o cliente já ligado ao agendamento.
+  // O barbeiro não precisa digitar nem informar o telefone.
+  clienteMensagemSelecionado=String(clienteId);
+
+  const abrir=()=>{
+    if(typeof window.abrirTelaAdminCheia==='function'){
+      window.abrirTelaAdminCheia('mensagens');
+    }else if(typeof window.mostrarTelaAdmin==='function'){
+      window.mostrarTelaAdmin('mensagens');
+    }
+    setTimeout(async()=>{
+      try{
+        if(!mensagensAdminCache.length) await carregarMensagensAdmin();
+        await abrirConversaAdmin(String(clienteId));
+        const input=document.getElementById('respostaMensagem');
+        if(input) input.focus();
+      }catch(e){
+        console.error('Abrir mensagem pela agenda:',e);
+        showToastAdmin('Não foi possível abrir a conversa.');
+      }
+    },100);
+  };
+  abrir();
+}
+
+
 let mensagensAdminCache=[];
 let clienteMensagemSelecionado=null;
 
