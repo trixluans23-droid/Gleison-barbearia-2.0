@@ -72,8 +72,44 @@ jobs:
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code=r'''\n<style id="logo-barbearia-online-style">\n#gc-logo-barbearia-online{display:block;width:min(100%,360px);height:auto;max-height:260px;object-fit:contain;margin:10px auto 18px;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}\n</style>\n<script id="logo-barbearia-online-script">\n(function(){\n  var logo="logo-barbearia.png";\n  function aplicar(){\n    if(document.getElementById("gc-logo-barbearia-online")) return;\n    var imgs=[].slice.call(document.images).filter(function(i){\n      var src=String(i.currentSrc||i.src||"").toLowerCase();\n      var id=String(i.id||"").toLowerCase();\n      var alt=String(i.alt||"").toLowerCase();\n      var cls=String(i.className||"").toLowerCase();\n      return src && !/supabase|storage|cliente|perfil|foto|avatar/.test(src+" "+id+" "+alt+" "+cls);\n    });\n    var alvo=null;\n    for(var n=0;n<imgs.length;n++){\n      var x=imgs[n], txt=String((x.alt||"")+" "+(x.id||"")+" "+(x.className||"")).toLowerCase();\n      if(/logo|barbearia|gleison/.test(txt)){alvo=x;break;}\n    }\n    if(alvo){\n      alvo.src=logo;\n      alvo.removeAttribute("srcset");\n      alvo.id=alvo.id||"gc-logo-barbearia-online";\n      alvo.alt="Gleison Barbearia";\n      alvo.style.objectFit="contain";\n      return;\n    }\n    var header=document.querySelector("header");\n    var base=document.querySelector("main")||document.body;\n    var img=document.createElement("img");\n    img.id="gc-logo-barbearia-online"; img.src=logo; img.alt="Gleison Barbearia";\n    if(header) header.insertAdjacentElement("afterend",img); else base.insertBefore(img,base.firstChild);\n  }\n  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,300)});\n  else setTimeout(aplicar,300);\n})();\n</script>\n'''
-          if 'id="logo-barbearia-online-script"' not in s and "</body>" in s:\n              s=s.replace("</body>",code+"</body>",1)\n          p.write_text(s,encoding="utf-8")\n          print("Nova imagem da Gleison Barbearia configurada.")\n          PY\n\n      - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
+          code='''<style id="logo-barbearia-online-style">
+          #gc-logo-barbearia-online{display:block;width:min(100%,360px);height:auto;max-height:260px;object-fit:contain;margin:10px auto 18px;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+          </style>
+          <script id="logo-barbearia-online-script">
+          (function(){
+            var logo="logo-barbearia.png";
+            function aplicar(){
+              var todos=document.querySelectorAll("body *");
+              for(var i=0;i<todos.length;i++){
+                var el=todos[i];
+                var texto=String(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(texto.indexOf("seu estilo começa aqui")===-1) continue;
+                var alvo=el;
+                for(var n=0;n<6 && alvo;n++,alvo=alvo.parentElement){
+                  var r=alvo.getBoundingClientRect();
+                  if(r.width>300 && r.height>220){
+                    alvo.style.backgroundImage="url('"+logo+"')";
+                    alvo.style.backgroundSize="cover";
+                    alvo.style.backgroundPosition="center";
+                    alvo.style.backgroundRepeat="no-repeat";
+                    alvo.setAttribute("data-logo-barbearia-aplicado","1");
+                    return;
+                  }
+                }
+              }
+            }
+            if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,300);setTimeout(aplicar,1200)});
+            else {setTimeout(aplicar,300);setTimeout(aplicar,1200);}
+          })();
+          </script>
+          '''
+          if 'id="logo-barbearia-online-script"' not in s and "</body>" in s:
+              s=s.replace("</body>",code+"</body>",1)
+          p.write_text(s,encoding="utf-8")
+          print("Nova imagem aplicada ao banner principal.")
+          PY
+
+      - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -1479,29 +1515,6 @@ jobs:
               return new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
             };
             function aplicar(){
-            var bannerUrl="logo-barbearia.png";
-            var todos=document.querySelectorAll("body *");
-            for(var i=0;i<todos.length;i++){
-              var el=todos[i];
-              var texto=String(el.innerText||el.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-              if(texto.indexOf("seu estilo começa aqui")===-1) continue;
-              var alvo=el;
-              for(var n=0;n<5 && alvo;n++,alvo=alvo.parentElement){
-                var r=alvo.getBoundingClientRect();
-                var bg=getComputedStyle(alvo).backgroundImage||"";
-                if(r.width>300 && r.height>220 && (bg.indexOf("url(")>=0 || n>0)){
-                  alvo.style.backgroundImage="url('"+bannerUrl+"')";
-                  alvo.style.backgroundSize="cover";
-                  alvo.style.backgroundPosition="center";
-                  alvo.style.backgroundRepeat="no-repeat";
-                  var imgs=alvo.querySelectorAll("img");
-                  for(var j=0;j<imgs.length;j++){imgs[j].src=bannerUrl;imgs[j].removeAttribute("srcset");}
-                  alvo.setAttribute("data-logo-barbearia-aplicado","1");
-                  return;
-                }
-              }
-            }
-
               try{
                 if(typeof window.formatDateTime==="function")window.formatDateTime=formatarSP;
               }catch(e){}
