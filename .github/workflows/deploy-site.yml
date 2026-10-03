@@ -66,40 +66,43 @@ jobs:
           PY
 
 
-      - name: Colocar logo somente dentro do banner principal
+      - name: Aplicar logo novo somente no banner do aplicativo e site
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="logo-banner-final-style">
-          .gc-logo-banner-final{position:absolute!important;right:8px!important;top:50%!important;transform:translateY(-50%)!important;width:42%!important;height:90%!important;object-fit:contain!important;z-index:2!important;pointer-events:none!important}
+          code='''<style id="gleison-banner-logo-final">
+          .gleison-banner-final{position:relative!important;overflow:hidden!important;background:#0b0d0f!important;background-image:none!important}
+          .gleison-banner-logo-final{position:absolute!important;right:2%!important;top:50%!important;transform:translateY(-50%)!important;width:44%!important;height:92%!important;object-fit:contain!important;object-position:center!important;z-index:10!important;pointer-events:none!important}
+          .gleison-banner-content-final{position:relative!important;z-index:20!important;width:52%!important;max-width:52%!important}
+          @media(max-width:600px){.gleison-banner-logo-final{width:44%!important;right:1%!important}.gleison-banner-content-final{width:53%!important;max-width:53%!important}}
           </style>
-          <script id="logo-banner-final-script">
+          <script id="gleison-banner-logo-final-script">
           (function(){
             function aplicar(){
-              var h=null,els=document.querySelectorAll("h1,h2,h3,div,p,span");
-              for(var i=0;i<els.length;i++){
-                var t=String(els[i].innerText||els[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
-                if(t.indexOf("seu estilo começa aqui")>=0){h=els[i];break;}
+              var alvo=null, titulo=null;
+              var nodes=document.querySelectorAll("h1,h2,h3,div,p,span");
+              for(var i=0;i<nodes.length;i++){
+                var t=String(nodes[i].innerText||nodes[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(t.indexOf("seu estilo começa aqui")>=0){titulo=nodes[i];break;}
               }
-              if(!h)return;
-              var vw=document.documentElement.clientWidth,banner=null,best=0;
-              for(var p=h.parentElement,n=0;p&&n<8;n++,p=p.parentElement){
-                var r=p.getBoundingClientRect();
-                if(r.width>=vw*0.88 && r.height>=180 && r.height<=520 && r.top>=0){
-                  if(r.width>best){best=r.width;banner=p;}
-                }
+              if(!titulo)return;
+              for(var p=titulo.parentElement,n=0;p&&n<8;n++,p=p.parentElement){
+                var r=p.getBoundingClientRect(), vw=document.documentElement.clientWidth;
+                if(r.width>=vw*0.85 && r.height>=250 && r.height<=650){alvo=p;break;}
               }
-              if(!banner)return;
-              if(getComputedStyle(banner).position==="static")banner.style.position="relative";
-              var logo=banner.querySelector(".gc-logo-banner-final");
+              if(!alvo)return;
+              alvo.classList.add("gleison-banner-final");
+              var conteudo=titulo.parentElement;
+              if(conteudo)conteudo.classList.add("gleison-banner-content-final");
+              var logo=alvo.querySelector(".gleison-banner-logo-final");
               if(!logo){
                 logo=document.createElement("img");
-                logo.className="gc-logo-banner-final";
+                logo.className="gleison-banner-logo-final";
                 logo.src="logo-barbearia.png";
                 logo.alt="Gleison Barbearia";
-                banner.appendChild(logo);
+                alvo.appendChild(logo);
               }
             }
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,500);setTimeout(aplicar,1500)});
@@ -107,10 +110,10 @@ jobs:
           })();
           </script>
           '''
-          if 'id="logo-banner-final-script"' not in s and "</body>" in s:
+          if 'id="gleison-banner-logo-final-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Logo aplicado somente dentro do banner, sem alterar largura ou fundo da página.")
+          print("Logo novo aplicado somente no banner; restante da tela preservado.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
