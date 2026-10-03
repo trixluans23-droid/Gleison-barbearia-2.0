@@ -72,41 +72,45 @@ jobs:
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
-          code='''<style id="logo-banner-limpo">
-          .gc-logo-banner-limpo{position:absolute!important;right:3%!important;top:50%!important;transform:translateY(-50%)!important;width:42%!important;height:88%!important;object-fit:contain!important;z-index:20!important;pointer-events:none!important}
+          code='''<style id="logo-banner-final-style">
+          .gc-logo-banner-final{position:absolute!important;right:8px!important;top:50%!important;transform:translateY(-50%)!important;width:42%!important;height:90%!important;object-fit:contain!important;z-index:2!important;pointer-events:none!important}
           </style>
-          <script id="logo-banner-limpo-script">
+          <script id="logo-banner-final-script">
           (function(){
             function aplicar(){
-              if(document.querySelector(".gc-logo-banner-limpo")) return;
-              var el=document.querySelectorAll("h1,h2");
-              for(var i=0;i<el.length;i++){
-                var t=(el[i].textContent||"").replace(/\\s+/g," ").trim().toLowerCase();
-                if(t.indexOf("seu estilo começa aqui")<0) continue;
-                var p=el[i];
-                for(var n=0;n<8 && p;n++,p=p.parentElement){
-                  var st=getComputedStyle(p),r=p.getBoundingClientRect();
-                  if(r.width>500 && r.height>250 && st.backgroundImage && st.backgroundImage!=="none"){
-                    if(st.position==="static") p.style.position="relative";
-                    var img=document.createElement("img");
-                    img.className="gc-logo-banner-limpo";
-                    img.src="logo-barbearia.png";
-                    img.alt="Gleison Barbearia";
-                    p.appendChild(img);
-                    return;
-                  }
+              var h=null,els=document.querySelectorAll("h1,h2,h3,div,p,span");
+              for(var i=0;i<els.length;i++){
+                var t=String(els[i].innerText||els[i].textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+                if(t.indexOf("seu estilo começa aqui")>=0){h=els[i];break;}
+              }
+              if(!h)return;
+              var vw=document.documentElement.clientWidth,banner=null,best=0;
+              for(var p=h.parentElement,n=0;p&&n<8;n++,p=p.parentElement){
+                var r=p.getBoundingClientRect();
+                if(r.width>=vw*0.88 && r.height>=180 && r.height<=520 && r.top>=0){
+                  if(r.width>best){best=r.width;banner=p;}
                 }
               }
+              if(!banner)return;
+              if(getComputedStyle(banner).position==="static")banner.style.position="relative";
+              var logo=banner.querySelector(".gc-logo-banner-final");
+              if(!logo){
+                logo=document.createElement("img");
+                logo.className="gc-logo-banner-final";
+                logo.src="logo-barbearia.png";
+                logo.alt="Gleison Barbearia";
+                banner.appendChild(logo);
+              }
             }
-            if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,500);setTimeout(aplicar,1500)});
-            else {setTimeout(aplicar,500);setTimeout(aplicar,1500);}
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(aplicar,500);setTimeout(aplicar,1500)});
+            else{setTimeout(aplicar,500);setTimeout(aplicar,1500);}
           })();
           </script>
           '''
-          if 'id="logo-banner-limpo-script"' not in s and "</body>" in s:
+          if 'id="logo-banner-final-script"' not in s and "</body>" in s:
               s=s.replace("</body>",code+"</body>",1)
           p.write_text(s,encoding="utf-8")
-          print("Logo aplicado somente no banner original, sem alterar o layout da página.")
+          print("Logo aplicado somente dentro do banner, sem alterar largura ou fundo da página.")
           PY
 
       - name: Sincronizar horários configurados pelo administrador com a agenda do cliente
