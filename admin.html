@@ -2652,5 +2652,34 @@ document.addEventListener('DOMContentLoaded', function(){
  },true);
 })();
 </script>
-</body>
+<script id="admin-botoes-navegacao-segura">
+(function(){
+  function abrir(tela){
+    var ids={agendar:'viewAgendar',agenda:'viewAgenda',financeiro:'viewFinanceiro',mensagens:'viewMensagens',conta:'viewConta',precos:'viewPrecos'};
+    var alvo=document.getElementById(ids[tela]);
+    if(!alvo)return;
+    document.querySelectorAll('.admin-view').forEach(function(v){v.classList.remove('active','admin-fullscreen');});
+    document.body.classList.remove('admin-tela-cheia-aberta');
+    alvo.classList.add('active','admin-fullscreen');
+    document.body.classList.add('admin-tela-cheia-aberta');
+    try{
+      if(tela==='agenda' && typeof carregarAgenda==='function') carregarAgenda();
+      if(tela==='financeiro' && typeof carregarFinanceiroAdmin==='function') carregarFinanceiroAdmin();
+      if(tela==='mensagens' && typeof atualizarMensagensAdminAgora==='function') atualizarMensagensAdminAgora();
+      if(tela==='precos' && typeof carregarPrecosAdmin==='function') carregarPrecosAdmin();
+      if(tela==='conta' && typeof carregarDadosContaAdmin==='function') carregarDadosContaAdmin();
+      if(tela==='agendar' && typeof atualizarHorariosAdmin==='function') atualizarHorariosAdmin();
+    }catch(err){console.error('Navegação administrativa:',err);}
+    alvo.scrollIntoView({block:'start',behavior:'auto'});
+  }
+  window.adminAbrirTelaSegura=abrir;
+  document.addEventListener('click',function(e){
+    var b=e.target.closest ? e.target.closest('.admin-menu-btn[data-admin-tela]') : null;
+    if(!b)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    abrir(b.getAttribute('data-admin-tela'));
+  },true);
+})();
+</script></body>
 </html>
