@@ -77,10 +77,19 @@ jobs:
 
           code=r'''
           <style id="banner-admin-safe-style">
+          /* O .hero original fica invisível desde o primeiro paint.
+             Assim a imagem antiga em base64 nunca aparece antes da nova. */
+          .hero{
+            visibility:hidden!important;
+            background:#0b0d0f!important;
+          }
           .banner-admin-safe{
             position:relative!important;
             overflow:hidden!important;
             background:#0b0d0f!important;
+          }
+          .banner-admin-safe.banner-admin-safe-ready{
+            visibility:visible!important;
           }
           .banner-admin-safe-img{
             position:absolute!important;
