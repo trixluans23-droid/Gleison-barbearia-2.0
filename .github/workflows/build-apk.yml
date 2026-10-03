@@ -6,6 +6,7 @@ on:
     paths:
       - 'GleisonBarbearia_2.0_V27_FCM.zip'
       - '.github/workflows/build-apk.yml'
+      - 'admin.html'
 
 permissions:
   contents: read
