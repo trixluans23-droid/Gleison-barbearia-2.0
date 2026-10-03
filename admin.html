@@ -1375,7 +1375,7 @@ async function atualizarMensagensAdminComFeedback(){
 function voltarListaMensagensAdmin(){
   clienteMensagemSelecionado=null;
   const conversa=document.getElementById('conversaAdmin');
-  if(conversa) conversa.classList.add('hidden');
+  if(conversa) conversa.style.display='none';
   const lista=document.getElementById('mensagensAdminLista');
   if(lista) lista.scrollIntoView({block:'start',behavior:'smooth'});
 }
@@ -1385,7 +1385,8 @@ async function abrirConversaAdmin(clienteId){
   const grupo=mensagensAdminCache.filter(m=>String(m.cliente_id)===String(clienteId));
   if(!grupo.length) return;
   const cliente=grupo[grupo.length-1];
-  document.getElementById('conversaAdmin').classList.remove('hidden');
+  const conversaAdmin=document.getElementById('conversaAdmin');
+  conversaAdmin.style.display='block';
   document.getElementById('conversaTitulo').textContent='💬 Conversa com '+(cliente.cliente_nome||'Cliente');
   const area=document.getElementById('conversaMensagens');
   area.innerHTML=grupo.map(m=>{
