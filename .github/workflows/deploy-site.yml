@@ -138,20 +138,20 @@ jobs:
           print("Logo novo aplicado somente no banner; restante da tela preservado.")
           PY
 
-      - name: Mostrar somente o banner escolhido pelo administrador
+      - name: Mostrar banner escolhido pelo administrador no cliente
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path("site/index.html")
           s=p.read_text(encoding="utf-8")
           code=r'''<style id="banner-admin-final-style">
-          .banner-admin-imagem-final{
-            background-size:100% 100%!important;
-            background-position:center!important;
-            background-repeat:no-repeat!important;
+          .banner-admin-imagem-final{position:relative!important;overflow:hidden!important;}
+          .banner-admin-imagem-final .banner-admin-img-final{
+            position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+            object-fit:cover!important;object-position:center!important;z-index:999!important;
+            display:block!important;opacity:1!important;
           }
-          .banner-admin-imagem-final > *{visibility:hidden!important;}
-          .banner-admin-imagem-final .gleison-banner-logo-final{display:none!important;}
+          .banner-admin-imagem-final .banner-admin-conteudo-final{display:none!important;}
           </style>
           <script id="banner-admin-final-script">
           (function(){
@@ -178,13 +178,22 @@ jobs:
                 if(r.error) throw r.error;
                 var row=Array.isArray(r.data)?(r.data[0]||null):r.data;
                 if(!row || !row.imagem_url) return;
-                var url=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+Date.now();
-                alvo.classList.add("banner-admin-imagem-final");
-                alvo.style.setProperty("background-image","url("+JSON.stringify(url)+")","important");
-                alvo.querySelectorAll("h1,h2,h3,p,button,a").forEach(function(e){e.style.setProperty("display","none","important");});
-                var old=alvo.querySelector(".gleison-banner-logo-final");
-                if(old) old.style.setProperty("display","none","important");
-              }catch(e){console.warn("Banner do administrador:",e);}
+                var img=alvo.querySelector(".banner-admin-img-final");
+                if(!img){
+                  img=document.createElement("img");
+                  img.className="banner-admin-img-final";
+                  img.alt="Gleison Barbearia";
+                  alvo.appendChild(img);
+                }
+                img.onload=function(){
+                  alvo.classList.add("banner-admin-imagem-final");
+                  Array.from(alvo.children).forEach(function(el){
+                    if(el!==img) el.classList.add("banner-admin-conteudo-final");
+                  });
+                };
+                img.onerror=function(){console.warn("Não foi possível carregar o banner:",img.src);};
+                img.src=row.imagem_url+(row.imagem_url.indexOf("?")>=0?"&":"?")+"v="+Date.now();
+              }catch(e){console.warn("Banner do administrador:",e);setTimeout(aplicar,1500);}
             }
             function iniciar(){setTimeout(aplicar,500);setTimeout(aplicar,1500);setTimeout(aplicar,3000);}
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
