@@ -83,6 +83,7 @@ jobs:
             pointer-events:none!important;
           }
           .banner-admin-safe-hidden{display:none!important;visibility:hidden!important;}
+          .banner-admin-safe:not(.banner-admin-safe-ready){visibility:hidden!important;}
           </style>
           <script id="banner-admin-safe-script">
           (function(){
@@ -161,6 +162,7 @@ jobs:
                   estado.img=img;
                   img.onload=function(){
                     proteger(a,img);
+                    a.classList.add("banner-admin-safe-ready");
                     estado.ignorarAte=Date.now()+800;
                   };
                   img.onerror=function(){
