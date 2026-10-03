@@ -132,7 +132,11 @@ jobs:
               if(!a||!img)return;
               a.classList.add("banner-admin-safe");
               Array.prototype.forEach.call(a.children,function(el){
-                if(el!==img)el.classList.add("banner-admin-safe-hidden");
+                if(el===img || el.classList.contains("heroText")){
+                  el.classList.remove("banner-admin-safe-hidden");
+                }else{
+                  el.classList.add("banner-admin-safe-hidden");
+                }
               });
             }
 
