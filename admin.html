@@ -82,6 +82,8 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 .message-client-head{display:flex;gap:10px;align-items:center}
 .message-client-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);background:var(--panel2)}
 .unread-badge{font-size:10px;color:#111;background:var(--gold2);padding:4px 7px;border-radius:8px;font-weight:800}
+.mensagem-badge-admin{margin-left:auto;min-width:28px;height:28px;padding:0 7px;border-radius:999px;background:#ff3b30;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;box-shadow:0 0 0 2px var(--panel2),0 0 12px rgba(255,59,48,.45);animation:mensagemBadgePulse 1.2s infinite}
+@keyframes mensagemBadgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 
 .status-barbearia-card{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
@@ -328,7 +330,7 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
   </div>
   <div class="resumo-dia-atualizado" id="resumoDiaAtualizado">Carregando resumo...</div>
 </div>
-<div class="admin-menu"><button class="btn admin-menu-btn" data-admin-tela="agendar" onclick="window.mostrarTelaAdmin('agendar');return false;" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" data-admin-tela="agenda" onclick="window.mostrarTelaAdmin('agenda');return false;" type="button">📋 Agenda</button><button class="btn admin-menu-btn" data-admin-tela="financeiro" onclick="window.mostrarTelaAdmin('financeiro');return false;" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" data-admin-tela="mensagens" onclick="window.mostrarTelaAdmin('mensagens');return false;" type="button">💬 Mensagens</button><button class="btn admin-menu-btn" data-admin-tela="conta" onclick="window.mostrarTelaAdmin('conta');return false;" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" data-admin-tela="precos" onclick="window.mostrarTelaAdmin('precos');return false;" type="button">💲 Preços</button></div>
+<div class="admin-menu"><button class="btn admin-menu-btn" data-admin-tela="agendar" onclick="window.mostrarTelaAdmin('agendar');return false;" type="button">📅 Agendar cliente</button><button class="btn admin-menu-btn" data-admin-tela="agenda" onclick="window.mostrarTelaAdmin('agenda');return false;" type="button">📋 Agenda</button><button class="btn admin-menu-btn" data-admin-tela="financeiro" onclick="window.mostrarTelaAdmin('financeiro');return false;" type="button">💰 Financeiro</button><button class="btn admin-menu-btn" id="btnMensagensAdmin" data-admin-tela="mensagens" onclick="window.mostrarTelaAdmin('mensagens');return false;" type="button">💬 Mensagens<span id="mensagemBadgeAdmin" class="mensagem-badge-admin" style="display:none"></span></button><button class="btn admin-menu-btn" data-admin-tela="conta" onclick="window.mostrarTelaAdmin('conta');return false;" type="button">⚙️ Minha conta</button><button class="btn admin-menu-btn" data-admin-tela="precos" onclick="window.mostrarTelaAdmin('precos');return false;" type="button">💲 Preços</button></div>
 
 <section class="section admin-view" id="viewNotificacoes">
 <button class="btn admin-voltar" onclick="mostrarTelaAdmin('menu')" type="button">← Voltar ao menu</button>
@@ -596,7 +598,9 @@ async function inicializarPainelAdmin(){
   document.getElementById('data').value=hojeLocal();
   await Promise.allSettled([carregarServicosAdmin(),carregarFotoBarbeiro(),carregarStatusBarbearia(),carregarMensagensAdmin(),carregarHorariosFuncionamentoAdmin()]);
   await atualizarNotificacoesAdminSilencioso();
+  await atualizarMensagensPendentesAdminSilencioso();
   if(!window.__intervalNotificacoesAdmin) window.__intervalNotificacoesAdmin=setInterval(atualizarNotificacoesAdminSilencioso,15000);
+  if(!window.__intervalMensagensAdmin) window.__intervalMensagensAdmin=setInterval(atualizarMensagensPendentesAdminSilencioso,5000);
   iniciarControleExcecaoAdmin();
   await verPeriodo('dia');
 }
@@ -1225,6 +1229,32 @@ async function criarUrlFotoAdmin(path){
     return dados.signedURL.startsWith('http') ? dados.signedURL : SUPABASE_URL + '/storage/v1' + dados.signedURL;
   }catch(e){ return ''; }
 }
+function atualizarBadgeMensagensAdmin(total){
+  const badge=document.getElementById('mensagemBadgeAdmin');
+  if(!badge) return;
+  const n=Number(total)||0;
+  badge.textContent=n>99?'99+':String(n);
+  badge.style.display=n?'flex':'none';
+}
+
+let __mensagensAdminNaoLidasAnterior=null;
+
+async function atualizarMensagensPendentesAdminSilencioso(){
+  if(!ADMIN_AUTH_READY) return;
+  try{
+    const rows=await chamarRPC('listar_mensagens_admin',{});
+    const itens=Array.isArray(rows)?rows:[];
+    const novas=itens.filter(m=>m.remetente==='cliente' && !m.lida).length;
+    atualizarBadgeMensagensAdmin(novas);
+    if(__mensagensAdminNaoLidasAnterior!==null && novas>__mensagensAdminNaoLidasAnterior){
+      showToastAdmin('💬 Nova mensagem de cliente!');
+    }
+    __mensagensAdminNaoLidasAnterior=novas;
+  }catch(e){
+    console.error('Mensagens pendentes:',e);
+  }
+}
+
 async function carregarMensagensAdmin(){
   const lista=document.getElementById('mensagensAdminLista');
   if(!lista) return;
@@ -1359,6 +1389,8 @@ async function abrirConversaAdmin(clienteId){
   area.scrollTop=area.scrollHeight;
   try{
     await chamarRPC('marcar_mensagens_lidas_admin',{p_cliente_id:clienteId});
+    atualizarBadgeMensagensAdmin(mensagensAdminCache.filter(m=>m.remetente==='cliente' && !m.lida && String(m.cliente_id)!==String(clienteId)).length);
+    __mensagensAdminNaoLidasAnterior=mensagensAdminCache.filter(m=>m.remetente==='cliente' && !m.lida && String(m.cliente_id)!==String(clienteId)).length;
     mensagensAdminCache.forEach(m=>{
       if(String(m.cliente_id)===String(clienteId) && m.remetente==='cliente') m.lida=true;
     });
