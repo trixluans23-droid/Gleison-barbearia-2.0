@@ -179,9 +179,6 @@ jobs:
 
             function iniciar(){
               aplicar();
-              setTimeout(aplicar,800);
-              setTimeout(aplicar,2200);
-              observar();
             }
 
             if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar);else iniciar();
