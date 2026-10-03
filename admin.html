@@ -82,6 +82,7 @@ input,select{width:100%;background:var(--panel);border:1px solid var(--line);bor
 .message-client-head{display:flex;gap:10px;align-items:center}
 .message-client-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);background:var(--panel2)}
 .unread-badge{font-size:10px;color:#111;background:var(--gold2);padding:4px 7px;border-radius:8px;font-weight:800}
+.mensagem-voltar-lista{width:auto;min-height:38px;padding:8px 12px;font-size:13px;font-weight:800;margin-bottom:10px}
 .mensagem-badge-admin{margin-left:auto;min-width:28px;height:28px;padding:0 7px;border-radius:999px;background:#ff3b30;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;box-shadow:0 0 0 2px var(--panel2),0 0 12px rgba(255,59,48,.45);animation:mensagemBadgePulse 1.2s infinite}
 @keyframes mensagemBadgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
@@ -384,6 +385,7 @@ body.admin-tela-cheia-aberta{overflow:hidden!important;}
 <div class="empty">Carregando mensagens...</div>
 </div>
 <div class="hidden" id="conversaAdmin" style="margin-top:12px">
+<button class="btn mensagem-voltar-lista" onclick="voltarListaMensagensAdmin()" type="button">← Outras mensagens</button>
 <div id="conversaTitulo" style="font-weight:900"></div>
 <div class="message-list-admin" id="conversaMensagens" style="margin-top:10px"></div>
 <div class="message-compose-admin">
@@ -1368,6 +1370,14 @@ async function atualizarMensagensAdminComFeedback(){
       if(btn){ btn.disabled=false; btn.textContent='↻ Atualizar'; }
     },1200);
   }
+}
+
+function voltarListaMensagensAdmin(){
+  clienteMensagemSelecionado=null;
+  const conversa=document.getElementById('conversaAdmin');
+  if(conversa) conversa.classList.add('hidden');
+  const lista=document.getElementById('mensagensAdminLista');
+  if(lista) lista.scrollIntoView({block:'start',behavior:'smooth'});
 }
 
 async function abrirConversaAdmin(clienteId){
